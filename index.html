@@ -178,7 +178,13 @@ const MSAL_CONFIG = {
     authority: 'https://login.microsoftonline.com/953d0292-aba4-4ead-8c1e-55386eea4a09',
     redirectUri: window.location.origin + window.location.pathname,
   },
-  cache: { cacheLocation: 'sessionStorage', storeAuthStateInCookie: false },
+  cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: false },
+  system: {
+    allowRedirectInIframe: false,
+    windowHashTimeout: 60000,
+    iframeHashTimeout: 6000,
+    loadFrameTimeout: 0,
+  },
 };
 const SCOPES = ['Files.Read', 'User.Read'];
 
@@ -245,17 +251,14 @@ async function initAuth() {
 async function signIn() {
   document.getElementById('signin-error').style.display = 'none';
   try {
-    // Make sure MSAL is fully initialized first
     if (!msalInstance) {
       await initAuth();
     }
     if (!msalInstance) {
       throw new Error('Authentication library failed to load. Please refresh the page.');
     }
-    const resp = await msalInstance.loginPopup({ scopes: SCOPES });
-    currentAccount = resp.account;
-    msalInstance.setActiveAccount(resp.account);
-    onSignedIn();
+    // Use redirect flow — most reliable, avoids popup-in-popup issues
+    await msalInstance.loginRedirect({ scopes: SCOPES });
   } catch (err) {
     console.error(err);
     const errBox = document.getElementById('signin-error');
@@ -266,7 +269,7 @@ async function signIn() {
 
 function signOut() {
   if (!msalInstance || !currentAccount) return;
-  msalInstance.logoutPopup({ account: currentAccount }).then(() => location.reload());
+  msalInstance.logoutRedirect({ account: currentAccount });
 }
 
 async function getAccessToken() {
@@ -275,8 +278,9 @@ async function getAccessToken() {
     return resp.accessToken;
   } catch (err) {
     if (err instanceof msal.InteractionRequiredAuthError) {
-      const resp = await msalInstance.acquireTokenPopup({ scopes: SCOPES });
-      return resp.accessToken;
+      // Fall back to redirect for token acquisition too
+      await msalInstance.acquireTokenRedirect({ scopes: SCOPES });
+      return null; // page will reload after redirect
     }
     throw err;
   }

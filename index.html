@@ -202,27 +202,46 @@ let currentAccount = null;
 // AUTH
 // ─────────────────────────────────────────────────────────────
 async function initAuth() {
-  msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
-  await msalInstance.initialize();
-  // handle redirect response if redirected back from login
-  const resp = await msalInstance.handleRedirectPromise();
-  if (resp && resp.account) {
-    currentAccount = resp.account;
-    msalInstance.setActiveAccount(resp.account);
-    onSignedIn();
-    return;
-  }
-  const accounts = msalInstance.getAllAccounts();
-  if (accounts.length > 0) {
-    currentAccount = accounts[0];
-    msalInstance.setActiveAccount(accounts[0]);
-    onSignedIn();
+  try {
+    if (typeof msal === 'undefined') {
+      throw new Error('MSAL library failed to load. Check your internet connection and refresh.');
+    }
+    msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
+    await msalInstance.initialize();
+    // handle redirect response if redirected back from login
+    const resp = await msalInstance.handleRedirectPromise();
+    if (resp && resp.account) {
+      currentAccount = resp.account;
+      msalInstance.setActiveAccount(resp.account);
+      onSignedIn();
+      return;
+    }
+    const accounts = msalInstance.getAllAccounts();
+    if (accounts.length > 0) {
+      currentAccount = accounts[0];
+      msalInstance.setActiveAccount(accounts[0]);
+      onSignedIn();
+    }
+  } catch (err) {
+    console.error('Auth init failed:', err);
+    const errBox = document.getElementById('signin-error');
+    if (errBox) {
+      errBox.textContent = 'Initialization error: ' + (err.message || err);
+      errBox.style.display = 'block';
+    }
   }
 }
 
 async function signIn() {
   document.getElementById('signin-error').style.display = 'none';
   try {
+    // Make sure MSAL is fully initialized first
+    if (!msalInstance) {
+      await initAuth();
+    }
+    if (!msalInstance) {
+      throw new Error('Authentication library failed to load. Please refresh the page.');
+    }
     const resp = await msalInstance.loginPopup({ scopes: SCOPES });
     currentAccount = resp.account;
     msalInstance.setActiveAccount(resp.account);
@@ -495,9 +514,13 @@ function onListDrop(e) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// INIT
+// INIT — wait for DOM and scripts to load
 // ─────────────────────────────────────────────────────────────
-initAuth();
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initAuth);
+} else {
+  initAuth();
+}
 </script>
 </body>
 </html>

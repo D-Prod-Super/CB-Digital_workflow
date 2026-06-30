@@ -17,36 +17,78 @@
   }
 </script>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f4f0; color: #1a1a18; min-height: 100vh; }
+:root {
+  --bg: #f5f4f0;
+  --surface: #ffffff;
+  --surface-2: #f5f4f0;
+  --text: #1a1a18;
+  --text-secondary: #555553;
+  --text-tertiary: #888780;
+  --text-muted: #aaa9a5;
+  --border: #e0dfd8;
+  --border-soft: #e8e7e2;
+  --border-subtle: #f0efe9;
+  --shadow: 0 1px 4px rgba(0,0,0,0.06);
+  --card-shadow: 0 2px 10px rgba(0,0,0,0.09);
+  --input-bg: #fafaf8;
+  --input-border: #ccc;
+  --hover-bg: #f0efe9;
+  --empty-bg: #f9f8f5;
+  --code-bg: #f3f2ee;
+  --header-strip: #f5f4f0;
+}
 
-.top-bar { background: #fff; padding: 0.85rem 1.5rem; border-bottom: 0.5px solid #e0dfd8; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; position: sticky; top: 0; z-index: 20; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+[data-theme="dark"] {
+  --bg: #0f1014;
+  --surface: #1a1b20;
+  --surface-2: #23252c;
+  --text: #e8e8e6;
+  --text-secondary: #b0afaa;
+  --text-tertiary: #888780;
+  --text-muted: #666663;
+  --border: #2e303a;
+  --border-soft: #2a2c34;
+  --border-subtle: #252730;
+  --shadow: 0 1px 4px rgba(0,0,0,0.4);
+  --card-shadow: 0 2px 12px rgba(0,0,0,0.5);
+  --input-bg: #23252c;
+  --input-border: #3a3c45;
+  --hover-bg: #2a2c34;
+  --empty-bg: #1d1e24;
+  --code-bg: #23252c;
+  --header-strip: #23252c;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; transition: background 0.2s, color 0.2s; }
+
+.top-bar { background: var(--surface); padding: 0.85rem 1.5rem; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; position: sticky; top: 0; z-index: 20; box-shadow: var(--shadow); }
 .brand { display: flex; align-items: center; gap: 10px; }
-.brand-icon { width: 30px; height: 30px; background: #1a1a18; border-radius: 7px; display: flex; align-items: center; justify-content: center; }
-.brand-icon svg { width: 16px; height: 16px; fill: #fff; }
-.brand h1 { font-size: 14px; font-weight: 600; color: #1a1a18; letter-spacing: -0.01em; }
-.brand span { font-size: 13px; color: #888780; font-weight: 400; }
+.brand-icon { width: 30px; height: 30px; background: var(--text); border-radius: 7px; display: flex; align-items: center; justify-content: center; }
+.brand-icon svg { width: 16px; height: 16px; fill: var(--surface); }
+.brand h1 { font-size: 14px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+.brand span { font-size: 13px; color: var(--text-tertiary); font-weight: 400; }
 
 .top-right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .filters { display: flex; gap: 8px; align-items: center; }
-.filters input, .filters select { font-size: 12px; height: 32px; padding: 0 10px; border-radius: 7px; border: 0.5px solid #ccc; background: #fafaf8; color: #1a1a18; outline: none; }
+.filters input, .filters select { font-size: 12px; height: 32px; padding: 0 10px; border-radius: 7px; border: 0.5px solid var(--input-border); background: var(--input-bg); color: var(--text); outline: none; }
 .filters input { width: 200px; }
-.filters input:focus, .filters select:focus { border-color: #888; }
+.filters input:focus, .filters select:focus { border-color: var(--text-tertiary); }
 
-.btn { display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 7px; border: 0.5px solid #ccc; background: #fff; color: #1a1a18; font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: background 0.15s; }
-.btn:hover { background: #f0efe9; border-color: #aaa; }
+.btn { display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 7px; border: 0.5px solid var(--input-border); background: var(--surface); color: var(--text); font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: background 0.15s; }
+.btn:hover { background: var(--hover-bg); }
 .btn svg { width: 14px; height: 14px; flex-shrink: 0; }
-.btn-primary { background: #0078d4; color: #fff; border-color: #0078d4; }
-.btn-primary:hover { background: #106ebe; border-color: #106ebe; }
+.btn-icon { width: 32px; padding: 0; justify-content: center; }
 .btn .spin { animation: spin 1s linear infinite; }
 @keyframes spin { 100% { transform: rotate(360deg); } }
-.user-pill { display: flex; align-items: center; gap: 7px; height: 32px; padding: 0 11px 0 7px; border-radius: 999px; border: 0.5px solid #ddd; background: #fafaf8; font-size: 12px; }
+
+.user-pill { display: flex; align-items: center; gap: 7px; height: 32px; padding: 0 11px 0 7px; border-radius: 999px; border: 0.5px solid var(--border); background: var(--input-bg); font-size: 12px; color: var(--text); }
 .user-avatar { width: 22px; height: 22px; border-radius: 50%; background: #0078d4; color: #fff; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
-.signout-btn { background: transparent; border: none; color: #888; font-size: 11px; cursor: pointer; padding: 0; margin-left: 4px; }
+.signout-btn { background: transparent; border: none; color: var(--text-tertiary); font-size: 11px; cursor: pointer; padding: 0; margin-left: 4px; }
 .signout-btn:hover { color: #c0392b; }
 
-.summary-bar { display: flex; gap: 10px; padding: 0.85rem 1.5rem; flex-wrap: wrap; background: #fff; border-bottom: 0.5px solid #e0dfd8; }
-.stat { background: #f5f4f0; border-radius: 8px; padding: 7px 14px; min-width: 90px; }
+.summary-bar { display: flex; gap: 10px; padding: 0.85rem 1.5rem; flex-wrap: wrap; background: var(--surface); border-bottom: 0.5px solid var(--border); }
+.stat { background: var(--surface-2); border-radius: 8px; padding: 7px 14px; min-width: 90px; }
 .stat.stat-highlight { background: #1a1a18; }
 .stat.stat-highlight .stat-label { color: #888780; }
 .stat.stat-highlight .stat-val { color: #fff; }
@@ -59,65 +101,77 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .stat.stat-highlight-rose { background: #5a1a2e; }
 .stat.stat-highlight-rose .stat-label { color: #e8a0b4; }
 .stat.stat-highlight-rose .stat-val { color: #fff; }
-.stat-label { font-size: 10px; color: #888780; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.04em; }
-.stat-val { font-size: 19px; font-weight: 600; color: #1a1a18; }
+[data-theme="dark"] .stat.stat-highlight { background: #2a2c34; }
+[data-theme="dark"] .stat.stat-highlight .stat-label { color: #b0afaa; }
+.stat-label { font-size: 10px; color: var(--text-tertiary); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.04em; }
+.stat-val { font-size: 19px; font-weight: 600; color: var(--text); }
 
-/* Sign-in / loading screens */
 .center-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 75vh; gap: 16px; text-align: center; padding: 2rem; }
-.center-screen svg { width: 48px; height: 48px; stroke: #ccc; }
-.center-screen h2 { font-size: 18px; font-weight: 500; color: #444; }
-.center-screen p { font-size: 14px; color: #888; max-width: 380px; line-height: 1.6; }
+.center-screen svg { width: 48px; height: 48px; stroke: var(--text-muted); }
+.center-screen h2 { font-size: 18px; font-weight: 500; color: var(--text-secondary); }
+.center-screen p { font-size: 14px; color: var(--text-tertiary); max-width: 380px; line-height: 1.6; }
 .center-screen .ms-btn { display: inline-flex; align-items: center; gap: 10px; padding: 11px 22px; background: #0078d4; color: #fff; border-radius: 9px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; margin-top: 4px; }
 .center-screen .ms-btn:hover { background: #106ebe; }
 .center-screen .err { color: #c0392b; font-size: 13px; max-width: 480px; background: #fdf0ee; padding: 10px 14px; border-radius: 8px; border: 0.5px solid #f5c2bb; }
-.spinner { width: 40px; height: 40px; border: 3px solid #e0dfd8; border-top-color: #0078d4; border-radius: 50%; animation: spin 0.8s linear infinite; }
+[data-theme="dark"] .center-screen .err { background: #3a1818; border-color: #5a2828; color: #ff8a7a; }
+.spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: #0078d4; border-radius: 50%; animation: spin 0.8s linear infinite; }
 
-.last-refresh { font-size: 11px; color: #888; padding: 0 4px; }
+.last-refresh { font-size: 11px; color: var(--text-tertiary); padding: 0 4px; }
 
 .board { display: flex; gap: 10px; padding: 1.25rem 1.5rem 2rem; overflow-x: auto; min-height: calc(100vh - 160px); align-items: flex-start; }
 .col { min-width: 210px; flex: 0 0 210px; display: flex; flex-direction: column; }
 .col-header { border-radius: 9px; padding: 8px 11px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
 .col-title { font-size: 11px; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; line-height: 1.3; }
 .col-count { font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600; flex-shrink: 0; }
-.col-value { font-size: 11px; font-weight: 600; color: #888; margin: 0 2px 8px; }
+.col-value { font-size: 11px; font-weight: 600; color: var(--text-tertiary); margin: 0 2px 8px; }
 
 .cards-list { display: flex; flex-direction: column; gap: 7px; flex: 1; min-height: 80px; border-radius: 10px; padding: 3px; transition: background 0.12s; }
-.cards-list.drag-over { background: rgba(0,0,0,0.035); outline: 1.5px dashed #bbb; outline-offset: -2px; }
+.cards-list.drag-over { background: rgba(0,0,0,0.035); outline: 1.5px dashed var(--text-muted); outline-offset: -2px; }
+[data-theme="dark"] .cards-list.drag-over { background: rgba(255,255,255,0.04); }
 
-.card { background: #fff; border: 0.5px solid #e0dfd8; border-radius: 11px; overflow: hidden; cursor: grab; transition: box-shadow 0.15s, border-color 0.15s, opacity 0.12s; user-select: none; }
-.card:hover { border-color: #bbb; box-shadow: 0 2px 10px rgba(0,0,0,0.09); }
+.card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 11px; overflow: hidden; cursor: grab; transition: box-shadow 0.15s, border-color 0.15s, opacity 0.12s; user-select: none; }
+.card:hover { border-color: var(--text-muted); box-shadow: var(--card-shadow); }
 .card.dragging { opacity: 0.35; cursor: grabbing; box-shadow: none; }
-.drag-placeholder { background: #f0efe9; border: 1.5px dashed #ccc; border-radius: 11px; min-height: 80px; }
+.drag-placeholder { background: var(--hover-bg); border: 1.5px dashed var(--text-muted); border-radius: 11px; min-height: 80px; }
 
-.card-header { background: #f5f4f0; border-bottom: 0.5px solid #e8e7e2; padding: 7px 12px; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
-.card-order-label { font-size: 9px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 1px; }
-.card-order-num { font-size: 14px; font-weight: 700; color: #1a1a18; letter-spacing: -0.02em; }
+.card-header { background: var(--header-strip); border-bottom: 0.5px solid var(--border-soft); padding: 7px 12px; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.card-order-label { font-size: 9px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 1px; }
+.card-order-num { font-size: 18px; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
 .rush-badge { font-size: 13px; flex-shrink: 0; }
 
 .card-body { padding: 9px 12px 10px; }
-.card-company { font-size: 12px; font-weight: 600; color: #1a1a18; margin-bottom: 2px; line-height: 1.3; }
-.card-product { font-size: 11px; color: #666663; margin-bottom: 8px; line-height: 1.4; }
-.card-size { color: #aaa; font-size: 10px; }
+.card-product { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; line-height: 1.3; }
+.card-size { color: var(--text-muted); font-size: 10px; font-weight: 400; }
+.card-company { font-size: 11px; color: var(--text-secondary); margin-bottom: 8px; line-height: 1.4; }
 .card-meta { display: flex; gap: 5px; flex-wrap: wrap; }
 .tag { font-size: 10px; padding: 2px 7px; border-radius: 999px; white-space: nowrap; font-weight: 500; }
 .tag-blue   { background: #ddeeff; color: #0a4080; }
 .tag-gray   { background: #efefeb; color: #555553; }
 .tag-green  { background: #e4f5d4; color: #2a5e10; }
 .tag-orange { background: #fff0e0; color: #8a4a00; }
+.tag-purple { background: #ece0f7; color: #4a2080; }
+[data-theme="dark"] .tag-blue   { background: #0a2b50; color: #a8d0f5; }
+[data-theme="dark"] .tag-gray   { background: #2a2c34; color: #b0afaa; }
+[data-theme="dark"] .tag-green  { background: #143820; color: #9fd9b5; }
+[data-theme="dark"] .tag-orange { background: #4a2c08; color: #fac97a; }
+[data-theme="dark"] .tag-purple { background: #2a1850; color: #c8a8e8; }
 
-.card-footer { padding: 7px 12px 9px; border-top: 0.5px solid #f0efe9; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
-.card-value { font-size: 11px; font-weight: 700; color: #1a1a18; }
+.card-footer { padding: 7px 12px 9px; border-top: 0.5px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.card-value { font-size: 11px; font-weight: 700; color: var(--text); }
 .card-due { font-size: 10px; font-weight: 600; }
 .due-ok   { color: #2d8a4e; }
 .due-warn { color: #b87a00; }
 .due-late { color: #c0392b; }
-.due-none { color: #bbb; }
+.due-none { color: var(--text-muted); }
+[data-theme="dark"] .due-ok { color: #5cc97a; }
+[data-theme="dark"] .due-warn { color: #f5c25a; }
+[data-theme="dark"] .due-late { color: #f47c6a; }
 
-.empty-col { background: #f9f8f5; border: 0.5px dashed #ddd; border-radius: 10px; padding: 20px 8px; text-align: center; font-size: 11px; color: #bbb; min-height: 70px; display: flex; align-items: center; justify-content: center; }
+.empty-col { background: var(--empty-bg); border: 0.5px dashed var(--border); border-radius: 10px; padding: 20px 8px; text-align: center; font-size: 11px; color: var(--text-muted); min-height: 70px; display: flex; align-items: center; justify-content: center; }
 
-.toast { position: fixed; bottom: 20px; right: 20px; background: #1a1a18; color: #fff; font-size: 12px; padding: 9px 16px; border-radius: 9px; opacity: 0; transition: opacity 0.25s; z-index: 100; pointer-events: none; max-width: 360px; }
+.toast { position: fixed; bottom: 20px; right: 20px; background: var(--text); color: var(--surface); font-size: 12px; padding: 9px 16px; border-radius: 9px; opacity: 0; transition: opacity 0.25s; z-index: 100; pointer-events: none; max-width: 360px; }
 .toast.show { opacity: 1; }
-.toast.error { background: #c0392b; }
+.toast.error { background: #c0392b; color: #fff; }
 </style>
 </head>
 <body>
@@ -135,6 +189,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
       <input type="text" id="search" placeholder="Search by order #, company..." oninput="render()">
       <select id="rep-filter" onchange="render()"><option value="">All reps</option></select>
     </div>
+    <button class="btn btn-icon" id="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">
+      <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+    </button>
     <button class="btn" id="refresh-btn" onclick="loadFromOneDrive()">
       <svg id="refresh-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
       Refresh
@@ -145,7 +202,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 
 <div class="summary-bar" id="summary-bar" style="display:none;"></div>
 
-<!-- Sign-in screen -->
 <div id="signin-screen" class="center-screen">
   <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5"><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/><path d="M12 7v5l3 3"/></svg>
   <h2>Connect to OneDrive</h2>
@@ -155,9 +211,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     Sign in with Microsoft
   </button>
   <div id="signin-error" class="err" style="display:none;"></div>
+  <button class="btn btn-icon" onclick="toggleTheme()" title="Toggle dark mode" style="position:fixed;top:1rem;right:1rem;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+  </button>
 </div>
 
-<!-- Loading screen -->
 <div id="loading-screen" class="center-screen" style="display:none;">
   <div class="spinner"></div>
   <h2>Loading orders from OneDrive...</h2>
@@ -169,9 +227,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 <div class="toast" id="toast"></div>
 
 <script>
-// ─────────────────────────────────────────────────────────────
 // CONFIG
-// ─────────────────────────────────────────────────────────────
 const MSAL_CONFIG = {
   auth: {
     clientId: 'bcb299b3-4989-4a82-a7cf-39bd830ee087',
@@ -179,17 +235,12 @@ const MSAL_CONFIG = {
     redirectUri: window.location.origin + window.location.pathname,
   },
   cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: false },
-  system: {
-    allowRedirectInIframe: false,
-    windowHashTimeout: 60000,
-    iframeHashTimeout: 6000,
-    loadFrameTimeout: 0,
-  },
+  system: { allowRedirectInIframe: false, windowHashTimeout: 60000, iframeHashTimeout: 6000, loadFrameTimeout: 0 },
 };
 const SCOPES = ['Files.Read', 'User.Read'];
 
-// The shareable OneDrive link encoded for Graph API
-const SHARE_URL = 'https://calbox-my.sharepoint.com/:x:/p/drodrigues/IQBNDnyLmcKeTbkc5R-KU8NsAQNSmDycoGkYk7YiLitLIe8';
+// Updated OneDrive sharing link
+const SHARE_URL = 'https://calbox-my.sharepoint.com/:x:/p/drodrigues/IQDYNMiqjj8TTKCXTm0muxJ6AcAhFR3cTk48rwqHNYcMMCo';
 
 const ALL_STAGES = [
   { key: 'New Order',             color: '#D6F5D6', textColor: '#1a5c1a', countBg: '#A8E6A8', countColor: '#0f3d0f' },
@@ -207,16 +258,37 @@ const ALL_STAGES = [
   { key: 'Palletizing',           color: '#F1EFE8', textColor: '#444441', countBg: '#D3D1C7', countColor: '#2C2C2A' },
 ];
 const stageKeys = ALL_STAGES.map(s => s.key);
-
 let orders = [];
 let dragSrcId = null;
 let placeholder = null;
 let msalInstance = null;
 let currentAccount = null;
 
-// ─────────────────────────────────────────────────────────────
+// THEME
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('cb-theme', theme);
+  const icon = document.getElementById('theme-icon');
+  if (icon) {
+    // sun for light mode, moon for dark
+    icon.innerHTML = theme === 'dark'
+      ? '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>'
+      : '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>';
+  }
+}
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'light';
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+}
+// Load saved theme or auto-detect
+(function initTheme() {
+  const saved = localStorage.getItem('cb-theme');
+  if (saved) { applyTheme(saved); }
+  else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) { applyTheme('dark'); }
+  else { applyTheme('light'); }
+})();
+
 // AUTH
-// ─────────────────────────────────────────────────────────────
 async function initAuth() {
   try {
     if (typeof msal === 'undefined') {
@@ -224,7 +296,6 @@ async function initAuth() {
     }
     msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
     await msalInstance.initialize();
-    // handle redirect response if redirected back from login
     const resp = await msalInstance.handleRedirectPromise();
     if (resp && resp.account) {
       currentAccount = resp.account;
@@ -241,23 +312,15 @@ async function initAuth() {
   } catch (err) {
     console.error('Auth init failed:', err);
     const errBox = document.getElementById('signin-error');
-    if (errBox) {
-      errBox.textContent = 'Initialization error: ' + (err.message || err);
-      errBox.style.display = 'block';
-    }
+    if (errBox) { errBox.textContent = 'Initialization error: ' + (err.message || err); errBox.style.display = 'block'; }
   }
 }
 
 async function signIn() {
   document.getElementById('signin-error').style.display = 'none';
   try {
-    if (!msalInstance) {
-      await initAuth();
-    }
-    if (!msalInstance) {
-      throw new Error('Authentication library failed to load. Please refresh the page.');
-    }
-    // Use redirect flow — most reliable, avoids popup-in-popup issues
+    if (!msalInstance) await initAuth();
+    if (!msalInstance) throw new Error('Authentication library failed to load. Please refresh the page.');
     await msalInstance.loginRedirect({ scopes: SCOPES });
   } catch (err) {
     console.error(err);
@@ -278,9 +341,8 @@ async function getAccessToken() {
     return resp.accessToken;
   } catch (err) {
     if (err instanceof msal.InteractionRequiredAuthError) {
-      // Fall back to redirect for token acquisition too
       await msalInstance.acquireTokenRedirect({ scopes: SCOPES });
-      return null; // page will reload after redirect
+      return null;
     }
     throw err;
   }
@@ -289,7 +351,7 @@ async function getAccessToken() {
 function onSignedIn() {
   document.getElementById('signin-screen').style.display = 'none';
   document.getElementById('top-right-controls').style.display = 'flex';
-  // Render user pill
+  applyTheme(localStorage.getItem('cb-theme') || 'light');
   const name = currentAccount.name || currentAccount.username;
   const initials = name.split(/[ @.]/).filter(Boolean).slice(0, 2).map(s => s[0].toUpperCase()).join('');
   document.getElementById('user-pill').innerHTML = `
@@ -300,11 +362,7 @@ function onSignedIn() {
   loadFromOneDrive();
 }
 
-// ─────────────────────────────────────────────────────────────
-// FETCH FROM ONEDRIVE
-// ─────────────────────────────────────────────────────────────
 function encodeShareUrl(url) {
-  // Microsoft Graph "shares" endpoint requires this base64 encoding
   const b64 = btoa(unescape(encodeURIComponent(url)));
   return 'u!' + b64.replace(/=+$/, '').replace(/\//g, '_').replace(/\+/g, '-');
 }
@@ -313,11 +371,9 @@ async function loadFromOneDrive() {
   setLoading(true, 'Connecting to OneDrive...');
   const refreshIcon = document.getElementById('refresh-icon');
   if (refreshIcon) refreshIcon.classList.add('spin');
-
   try {
     const token = await getAccessToken();
     const shareId = encodeShareUrl(SHARE_URL);
-
     setLoading(true, 'Downloading Excel file...');
     const resp = await fetch(`https://graph.microsoft.com/v1.0/shares/${shareId}/driveItem/content`, {
       headers: { Authorization: 'Bearer ' + token }
@@ -326,15 +382,10 @@ async function loadFromOneDrive() {
       const errText = await resp.text();
       throw new Error(`OneDrive returned ${resp.status}: ${errText.slice(0,200)}`);
     }
-
     setLoading(true, 'Parsing orders...');
     const buffer = await resp.arrayBuffer();
     const parsed = parseExcel(buffer);
-
-    if (!parsed.length) {
-      throw new Error('No order rows found in the Excel file.');
-    }
-
+    if (!parsed.length) throw new Error('No order rows found in the Excel file.');
     orders = parsed;
     initFilters();
     setLoading(false);
@@ -361,9 +412,7 @@ function setLoading(isLoading, msg) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-// EXCEL PARSING
-// ─────────────────────────────────────────────────────────────
+// EXCEL PARSING — updated for new columns
 function parseExcel(arrayBuf) {
   const wb = XLSX.read(new Uint8Array(arrayBuf), { type: 'array', cellDates: true });
   const sheetName = wb.SheetNames.includes('Orders') ? 'Orders' : wb.SheetNames[0];
@@ -372,25 +421,27 @@ function parseExcel(arrayBuf) {
     const fmtDate = v => v instanceof Date ? v.toISOString().slice(0,10) : (v ? String(v).slice(0,10) : null);
     const rush = r['Rush'], status = r['Stages/Status'];
     return {
-      id:       String(r['Order No.']).replace(/\.0$/,''),
-      company:  r['Company Name']        || '',
-      product:  r['Product Description'] || '',
-      size:     r['Product Size']        || '',
-      msf:      r['Total MSF.'] != null ? parseFloat(Number(r['Total MSF.']).toFixed(2)) : null,
-      qty:      r['QTY'] != null ? Math.round(Number(r['QTY'])) : null,
-      due:      fmtDate(r['Due Date']),
-      rep:      r['Sales Rep']  || '',
-      designer: r['Designer']   || '',
-      value:    r['Order Value $'] != null ? parseFloat(Number(r['Order Value $']).toFixed(2)) : null,
-      status:   stageKeys.includes(status) ? status : 'New Order',
-      rush:     rush === '🚩' || rush === true || rush === 1 || String(rush||'').toLowerCase() === 'yes',
+      id:           String(r['Order No.']).replace(/\.0$/,''),
+      company:      r['Company Name']        || '',
+      product:      r['Product Description'] || '',
+      size:         r['Product Size']        || '',
+      productMsf:   r['Product MSF.'] != null ? parseFloat(Number(r['Product MSF.']).toFixed(2)) : null,
+      boardMsf:     r['Board MSF.']   != null ? parseFloat(Number(r['Board MSF.']).toFixed(2))   : null,
+      estPrintTime: r['EST. Print Time']     || r['Est. Print Time'] || null,
+      printDuration:r['Print Duration']      || null,
+      cutDuration:  r['Cut Duration']        || null,
+      qty:          r['QTY'] != null ? Math.round(Number(r['QTY'])) : null,
+      due:          fmtDate(r['Due Date']),
+      rep:          r['Sales Rep']  || '',
+      designer:     r['Designer']   || '',
+      value:        r['Order Value $'] != null ? parseFloat(Number(r['Order Value $']).toFixed(2)) : null,
+      status:       stageKeys.includes(status) ? status : 'New Order',
+      rush:         rush === '🚩' || rush === true || rush === 1 || String(rush||'').toLowerCase() === 'yes',
     };
   });
 }
 
-// ─────────────────────────────────────────────────────────────
 // UI HELPERS
-// ─────────────────────────────────────────────────────────────
 function initFilters() {
   const reps = [...new Set(orders.map(o => o.rep).filter(Boolean))].sort();
   const sel = document.getElementById('rep-filter');
@@ -417,6 +468,20 @@ function dueInfo(due) {
 
 function fmtMoney(v) { return v == null ? null : '$' + Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 function fmtMSF(v)   { return parseFloat(v.toFixed(2)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function fmtPrintTime(v) {
+  if (v == null) return null;
+  // If a Date or hh:mm string, normalize. If a number, treat as hours.
+  if (v instanceof Date) {
+    const h = v.getHours(), m = v.getMinutes();
+    return `${h}h ${m.toString().padStart(2,'0')}m`;
+  }
+  if (typeof v === 'number') {
+    const h = Math.floor(v);
+    const m = Math.round((v - h) * 60);
+    return `${h}h ${m.toString().padStart(2,'0')}m`;
+  }
+  return String(v);
+}
 
 function showToast(msg, error) {
   const t = document.getElementById('toast');
@@ -426,9 +491,7 @@ function showToast(msg, error) {
   clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), error ? 5000 : 2500);
 }
 
-// ─────────────────────────────────────────────────────────────
 // RENDER
-// ─────────────────────────────────────────────────────────────
 function render() {
   if (!orders.length) return;
   const filtered = getFiltered();
@@ -436,13 +499,13 @@ function render() {
   const rush       = filtered.filter(o => o.rush).length;
   const overdue    = filtered.filter(o => o.due && new Date(o.due) < today).length;
   const totalValue = filtered.reduce((s, o) => s + (o.value || 0), 0);
-  const totalMSF   = filtered.reduce((s, o) => s + (o.msf   || 0), 0);
-  const durstMSF   = filtered.filter(o => o.status === 'In Queue for Printing' || o.status === 'Printing').reduce((s, o) => s + (o.msf || 0), 0);
-  const elitronMSF = filtered.filter(o => o.status === 'In Queue for Cutting'  || o.status === 'Cutting' ).reduce((s, o) => s + (o.msf || 0), 0);
+  const totalBookedMSF = filtered.reduce((s, o) => s + (o.boardMsf || 0), 0);
+  const durstMSF   = filtered.filter(o => o.status === 'In Queue for Printing' || o.status === 'Printing').reduce((s, o) => s + (o.boardMsf || 0), 0);
+  const elitronMSF = filtered.filter(o => o.status === 'In Queue for Cutting'  || o.status === 'Cutting' ).reduce((s, o) => s + (o.boardMsf || 0), 0);
 
   document.getElementById('summary-bar').innerHTML = `
     <div class="stat stat-highlight"><div class="stat-label">Total order value</div><div class="stat-val">${totalValue > 0 ? fmtMoney(totalValue) : '—'}</div></div>
-    <div class="stat stat-highlight-green"><div class="stat-label">Total MSF</div><div class="stat-val">${totalMSF > 0 ? fmtMSF(totalMSF) : '—'}</div></div>
+    <div class="stat stat-highlight-green"><div class="stat-label">Total Booked MSF</div><div class="stat-val">${totalBookedMSF > 0 ? fmtMSF(totalBookedMSF) : '—'}</div></div>
     <div class="stat stat-highlight-blue"><div class="stat-label">Durst MSF</div><div class="stat-val">${durstMSF > 0 ? fmtMSF(durstMSF) : '—'}</div></div>
     <div class="stat stat-highlight-rose"><div class="stat-label">Elitron MSF</div><div class="stat-val">${elitronMSF > 0 ? fmtMSF(elitronMSF) : '—'}</div></div>
     <div class="stat"><div class="stat-label">Orders</div><div class="stat-val">${filtered.length}</div></div>
@@ -471,6 +534,7 @@ function render() {
 function cardHTML(o) {
   const { cls, label } = dueInfo(o.due);
   const money = fmtMoney(o.value);
+  const printTime = fmtPrintTime(o.estPrintTime);
   return `<div class="card" draggable="true" data-id="${o.id}">
     <div class="card-header">
       <div>
@@ -480,13 +544,14 @@ function cardHTML(o) {
       ${o.rush ? '<span class="rush-badge" title="Rush">🚩</span>' : ''}
     </div>
     <div class="card-body">
-      <div class="card-company">${o.company || '—'}</div>
       <div class="card-product">${o.product || '—'}${o.size ? ` <span class="card-size">· ${o.size}</span>` : ''}</div>
+      <div class="card-company">${o.company || '—'}</div>
       <div class="card-meta">
-        ${o.qty  != null ? `<span class="tag tag-blue">Qty ${o.qty.toLocaleString()}</span>` : ''}
-        ${o.msf  != null ? `<span class="tag tag-green">MSF ${o.msf}</span>` : ''}
-        ${o.rep      ? `<span class="tag tag-orange">${o.rep}</span>` : ''}
-        ${o.designer ? `<span class="tag tag-gray">${o.designer}</span>` : ''}
+        ${o.qty       != null ? `<span class="tag tag-blue">Qty ${o.qty.toLocaleString()}</span>` : ''}
+        ${o.boardMsf  != null ? `<span class="tag tag-green">Board MSF ${o.boardMsf}</span>` : ''}
+        ${printTime          ? `<span class="tag tag-purple">⏱ ${printTime}</span>` : ''}
+        ${o.rep              ? `<span class="tag tag-orange">${o.rep}</span>` : ''}
+        ${o.designer         ? `<span class="tag tag-gray">${o.designer}</span>` : ''}
       </div>
     </div>
     <div class="card-footer">
@@ -496,9 +561,7 @@ function cardHTML(o) {
   </div>`;
 }
 
-// ─────────────────────────────────────────────────────────────
-// DRAG & DROP (visual only — does NOT save back to Excel)
-// ─────────────────────────────────────────────────────────────
+// DRAG & DROP
 function attachDrag() {
   document.querySelectorAll('.card').forEach(c => { c.addEventListener('dragstart', onDragStart); c.addEventListener('dragend', onDragEnd); });
   document.querySelectorAll('.cards-list').forEach(l => { l.addEventListener('dragover', onListOver); l.addEventListener('dragenter', onListEnter); l.addEventListener('dragleave', onListLeave); l.addEventListener('drop', onListDrop); });
@@ -527,14 +590,9 @@ function onListDrop(e) {
   render();
 }
 
-// ─────────────────────────────────────────────────────────────
-// INIT — wait for DOM and scripts to load
-// ─────────────────────────────────────────────────────────────
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initAuth);
-} else {
-  initAuth();
-}
+// INIT
+if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initAuth); }
+else { initAuth(); }
 </script>
 </body>
 </html>

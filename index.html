@@ -415,7 +415,9 @@ function setLoading(isLoading, msg) {
 // EXCEL PARSING — updated for new columns
 function parseExcel(arrayBuf) {
   const wb = XLSX.read(new Uint8Array(arrayBuf), { type: 'array', cellDates: true });
-  const sheetName = wb.SheetNames.includes('Orders') ? 'Orders' : wb.SheetNames[0];
+  // Try common sheet names in order, fall back to first sheet
+  const candidates = ['Live Orders', 'Orders', 'Sheet1'];
+  let sheetName = candidates.find(n => wb.SheetNames.includes(n)) || wb.SheetNames[0];
   const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: null });
   return rows.filter(r => r['Order No.'] != null).map(r => {
     const fmtDate = v => v instanceof Date ? v.toISOString().slice(0,10) : (v ? String(v).slice(0,10) : null);

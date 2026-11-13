@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Calbox — Order Workflow Dashboard</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
@@ -17,6 +17,8 @@
   }
 </script>
 <style>
+/* Layout: sticky top bar + summary, then one table per department phase.
+   Each status is a colored header bar with its orders listed underneath, one row per order. */
 :root {
   --bg: #f5f4f0;
   --surface: #ffffff;
@@ -34,200 +36,275 @@
   --input-border: #ccc;
   --hover-bg: #f0efe9;
   --empty-bg: #f9f8f5;
-  --code-bg: #f3f2ee;
   --header-strip: #f5f4f0;
+  --lane-bg: #fbfaf7;
+  --banner-bg: #fff4dc;
+  --banner-fg: #6b4a00;
+  --banner-border: #f1d79a;
+  --tag-blue-bg: #ddeeff;   --tag-blue-fg: #0a4080;
+  --tag-gray-bg: #efefeb;   --tag-gray-fg: #555553;
+  --tag-green-bg: #e4f5d4;  --tag-green-fg: #2a5e10;
+  --tag-orange-bg: #fff0e0; --tag-orange-fg: #8a4a00;
+  --tag-purple-bg: #ece0f7; --tag-purple-fg: #4a2080;
+  --ok: #2d8a4e; --warn: #b87a00; --late: #c0392b;
+  --late-bg: #fdecea;
+  --rush-bg: #fff3b0; --rush-hover: #ffea85; --rush-edge: #e0a100;
+  --stat-dark: #1a1a18; --stat-dark-label: #888780;
+  --stat-green: #1a4a2e; --stat-green-label: #6bbf8a;
+  --stat-blue: #0c3060;  --stat-blue-label: #7ab3e8;
+  --stat-rose: #5a1a2e;  --stat-rose-label: #e8a0b4;
+  --stat-on: #ffffff;
+  --toast-bg: #1a1a18; --toast-fg: #ffffff;
+  --drop-bg: rgba(0,0,0,0.035);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1014; --surface: #1a1b20; --surface-2: #23252c;
+    --text: #e8e8e6; --text-secondary: #b0afaa; --text-tertiary: #888780; --text-muted: #666663;
+    --border: #2e303a; --border-soft: #2a2c34; --border-subtle: #252730;
+    --shadow: 0 1px 4px rgba(0,0,0,0.4); --card-shadow: 0 2px 12px rgba(0,0,0,0.5);
+    --input-bg: #23252c; --input-border: #3a3c45; --hover-bg: #2a2c34; --empty-bg: #1d1e24;
+    --header-strip: #23252c; --lane-bg: #15161a;
+    --banner-bg: #3a2c0c; --banner-fg: #f5d58a; --banner-border: #5a4415;
+    --tag-blue-bg: #0a2b50;   --tag-blue-fg: #a8d0f5;
+    --tag-gray-bg: #2a2c34;   --tag-gray-fg: #b0afaa;
+    --tag-green-bg: #143820;  --tag-green-fg: #9fd9b5;
+    --tag-orange-bg: #4a2c08; --tag-orange-fg: #fac97a;
+    --tag-purple-bg: #2a1850; --tag-purple-fg: #c8a8e8;
+    --ok: #5cc97a; --warn: #f5c25a; --late: #f47c6a; --late-bg: #3a1818;
+    --rush-bg: #3a2c08; --rush-hover: #4a3810; --rush-edge: #f5c25a;
+    --stat-dark: #2a2c34; --stat-dark-label: #b0afaa;
+    --toast-bg: #e8e8e6; --toast-fg: #1a1a18;
+    --drop-bg: rgba(255,255,255,0.04);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1014; --surface: #1a1b20; --surface-2: #23252c;
+  --text: #e8e8e6; --text-secondary: #b0afaa; --text-tertiary: #888780; --text-muted: #666663;
+  --border: #2e303a; --border-soft: #2a2c34; --border-subtle: #252730;
+  --shadow: 0 1px 4px rgba(0,0,0,0.4); --card-shadow: 0 2px 12px rgba(0,0,0,0.5);
+  --input-bg: #23252c; --input-border: #3a3c45; --hover-bg: #2a2c34; --empty-bg: #1d1e24;
+  --header-strip: #23252c; --lane-bg: #15161a;
+  --banner-bg: #3a2c0c; --banner-fg: #f5d58a; --banner-border: #5a4415;
+  --tag-blue-bg: #0a2b50;   --tag-blue-fg: #a8d0f5;
+  --tag-gray-bg: #2a2c34;   --tag-gray-fg: #b0afaa;
+  --tag-green-bg: #143820;  --tag-green-fg: #9fd9b5;
+  --tag-orange-bg: #4a2c08; --tag-orange-fg: #fac97a;
+  --tag-purple-bg: #2a1850; --tag-purple-fg: #c8a8e8;
+  --ok: #5cc97a; --warn: #f5c25a; --late: #f47c6a; --late-bg: #3a1818;
+    --rush-bg: #3a2c08; --rush-hover: #4a3810; --rush-edge: #f5c25a;
+  --stat-dark: #2a2c34; --stat-dark-label: #b0afaa;
+  --toast-bg: #e8e8e6; --toast-fg: #1a1a18;
+  --drop-bg: rgba(255,255,255,0.04);
+  color-scheme: dark;
 }
 
-[data-theme="dark"] {
-  --bg: #0f1014;
-  --surface: #1a1b20;
-  --surface-2: #23252c;
-  --text: #e8e8e6;
-  --text-secondary: #b0afaa;
-  --text-tertiary: #888780;
-  --text-muted: #666663;
-  --border: #2e303a;
-  --border-soft: #2a2c34;
-  --border-subtle: #252730;
-  --shadow: 0 1px 4px rgba(0,0,0,0.4);
-  --card-shadow: 0 2px 12px rgba(0,0,0,0.5);
-  --input-bg: #23252c;
-  --input-border: #3a3c45;
-  --hover-bg: #2a2c34;
-  --empty-bg: #1d1e24;
-  --code-bg: #23252c;
-  --header-strip: #23252c;
-}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+img { max-width: 100%; }
+body { font-size: 16px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; font-variant-numeric: tabular-nums; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--surface); }
+.gutter { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; transition: background 0.2s, color 0.2s; }
-
-.top-bar { background: var(--surface); padding: 0.85rem 1.5rem; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; position: sticky; top: 0; z-index: 20; box-shadow: var(--shadow); }
-.brand { display: flex; align-items: center; gap: 10px; }
-.brand-icon { width: 30px; height: 30px; background: var(--text); border-radius: 7px; display: flex; align-items: center; justify-content: center; }
+/* Header */
+.sticky { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--surface); box-shadow: var(--shadow); }
+.top-bar { padding-block: 0.75rem; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.brand-icon { width: 30px; height: 30px; background: var(--text); border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .brand-icon svg { width: 16px; height: 16px; fill: var(--surface); }
-.brand h1 { font-size: 14px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
-.brand span { font-size: 13px; color: var(--text-tertiary); font-weight: 400; }
+.brand h1 { font-size: 16px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+.brand h1 span { color: var(--text-tertiary); font-weight: 400; }
 
-.top-right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.filters { display: flex; gap: 8px; align-items: center; }
-.filters input, .filters select { font-size: 12px; height: 32px; padding: 0 10px; border-radius: 7px; border: 0.5px solid var(--input-border); background: var(--input-bg); color: var(--text); outline: none; }
-.filters input { width: 200px; }
-.filters input:focus, .filters select:focus { border-color: var(--text-tertiary); }
-
-.btn { display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 7px; border: 0.5px solid var(--input-border); background: var(--surface); color: var(--text); font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: background 0.15s; }
+.controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.controls input[type="text"], .controls select { font: inherit; font-size: 14px; height: 32px; padding: 0 10px; border-radius: 7px; border: 0.5px solid var(--input-border); background: var(--input-bg); color: var(--text); outline: none; }
+.controls input[type="text"] { width: 210px; max-width: 100%; }
+.controls input:focus-visible, .controls select:focus-visible, .btn:focus-visible { outline: 2px solid var(--text-tertiary); outline-offset: 1px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 7px; border: 0.5px solid var(--input-border); background: var(--surface); color: var(--text); font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; white-space: nowrap; }
 .btn:hover { background: var(--hover-bg); }
-.btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+.btn[aria-pressed="true"] { background: var(--text); color: var(--surface); border-color: var(--text); }
+.btn svg { width: 14px; height: 14px; }
 .btn-icon { width: 32px; padding: 0; justify-content: center; }
-.btn .spin { animation: spin 1s linear infinite; }
-@keyframes spin { 100% { transform: rotate(360deg); } }
 
-.user-pill { display: flex; align-items: center; gap: 7px; height: 32px; padding: 0 11px 0 7px; border-radius: 999px; border: 0.5px solid var(--border); background: var(--input-bg); font-size: 12px; color: var(--text); }
-.user-avatar { width: 22px; height: 22px; border-radius: 50%; background: #0078d4; color: #fff; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
-.signout-btn { background: transparent; border: none; color: var(--text-tertiary); font-size: 11px; cursor: pointer; padding: 0; margin-left: 4px; }
-.signout-btn:hover { color: #c0392b; }
+.summary-bar { padding-block: 0.7rem; display: flex; gap: 8px; flex-wrap: wrap; border-bottom: 0.5px solid var(--border); }
+.stat { background: var(--surface-2); border-radius: 8px; padding: 6px 13px; min-width: 88px; }
+.stat-label { font-size: 12px; color: var(--text-tertiary); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.04em; }
+.stat-val { font-size: 20px; font-weight: 600; }
+.stat.dark  { background: var(--stat-dark); }  .stat.dark .stat-label  { color: var(--stat-dark-label); }
+.stat.green { background: var(--stat-green); } .stat.green .stat-label { color: var(--stat-green-label); }
+.stat.blue  { background: var(--stat-blue); }  .stat.blue .stat-label  { color: var(--stat-blue-label); }
+.stat.rose  { background: var(--stat-rose); }  .stat.rose .stat-label  { color: var(--stat-rose-label); }
+.stat.dark .stat-val, .stat.green .stat-val, .stat.blue .stat-val, .stat.rose .stat-val { color: var(--stat-on); }
+.stat .late { color: var(--late); }
+.stat-note { font-size: 12px; margin-top: 1px; opacity: 0.75; color: var(--stat-on); }
 
-.summary-bar { display: flex; gap: 10px; padding: 0.85rem 1.5rem; flex-wrap: wrap; background: var(--surface); border-bottom: 0.5px solid var(--border); }
-.stat { background: var(--surface-2); border-radius: 8px; padding: 7px 14px; min-width: 90px; }
-.stat.stat-highlight { background: #1a1a18; }
-.stat.stat-highlight .stat-label { color: #888780; }
-.stat.stat-highlight .stat-val { color: #fff; }
-.stat.stat-highlight-green { background: #1a4a2e; }
-.stat.stat-highlight-green .stat-label { color: #6bbf8a; }
-.stat.stat-highlight-green .stat-val { color: #fff; }
-.stat.stat-highlight-blue { background: #0c3060; }
-.stat.stat-highlight-blue .stat-label { color: #7ab3e8; }
-.stat.stat-highlight-blue .stat-val { color: #fff; }
-.stat.stat-highlight-rose { background: #5a1a2e; }
-.stat.stat-highlight-rose .stat-label { color: #e8a0b4; }
-.stat.stat-highlight-rose .stat-val { color: #fff; }
-[data-theme="dark"] .stat.stat-highlight { background: #2a2c34; }
-[data-theme="dark"] .stat.stat-highlight .stat-label { color: #b0afaa; }
-.stat-label { font-size: 10px; color: var(--text-tertiary); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.04em; }
-.stat-val { font-size: 19px; font-weight: 600; color: var(--text); }
+/* Sign-in, loading and error screens */
+.center-screen { min-height: 70vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 12px; padding-block: 3rem; }
+.center-screen h2 { margin: 0; font-size: 20px; font-weight: 600; }
+.center-screen p { margin: 0; max-width: 420px; font-size: 15px; line-height: 1.5; color: var(--text-secondary); }
+.center-icon { width: 44px; height: 44px; border-radius: 12px; background: var(--surface-2); display: flex; align-items: center; justify-content: center; color: var(--text-secondary); }
+.center-icon svg { width: 22px; height: 22px; }
+.ms-btn { display: inline-flex; align-items: center; gap: 10px; height: 40px; padding: 0 18px; border-radius: 8px; border: 0.5px solid var(--input-border); background: var(--surface); color: var(--text); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 6px; }
+.ms-btn:hover { background: var(--hover-bg); }
+.ms-btn:focus-visible { outline: 2px solid var(--text-tertiary); outline-offset: 2px; }
+.ms-btn svg { width: 16px; height: 16px; }
+.err { max-width: 460px; font-size: 14px; line-height: 1.45; color: var(--late); background: var(--late-bg); border-radius: 8px; padding: 8px 12px; }
+.spinner { width: 30px; height: 30px; border-radius: 50%; border: 3px solid var(--border); border-top-color: var(--text-secondary); animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin 0.8s linear infinite; }
+.last-refresh { font-size: 13px; color: var(--text-tertiary); white-space: nowrap; }
+.user-pill { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 4px 0 4px; border-radius: 999px; background: var(--surface-2); font-size: 14px; max-width: 100%; }
+.user-avatar { width: 24px; height: 24px; border-radius: 50%; background: var(--text); color: var(--surface); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.user-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+.signout-btn { border: 0; background: transparent; color: var(--text-tertiary); font: inherit; font-size: 13px; cursor: pointer; padding: 4px 8px; border-radius: 999px; }
+.signout-btn:hover { background: var(--hover-bg); color: var(--text); }
+.toast.error { background: var(--late); color: #fff; }
 
-.center-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 75vh; gap: 16px; text-align: center; padding: 2rem; }
-.center-screen svg { width: 48px; height: 48px; stroke: var(--text-muted); }
-.center-screen h2 { font-size: 18px; font-weight: 500; color: var(--text-secondary); }
-.center-screen p { font-size: 14px; color: var(--text-tertiary); max-width: 380px; line-height: 1.6; }
-.center-screen .ms-btn { display: inline-flex; align-items: center; gap: 10px; padding: 11px 22px; background: #0078d4; color: #fff; border-radius: 9px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; margin-top: 4px; }
-.center-screen .ms-btn:hover { background: #106ebe; }
-.center-screen .err { color: #c0392b; font-size: 13px; max-width: 480px; background: #fdf0ee; padding: 10px 14px; border-radius: 8px; border: 0.5px solid #f5c2bb; }
-[data-theme="dark"] .center-screen .err { background: #3a1818; border-color: #5a2828; color: #ff8a7a; }
-.spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: #0078d4; border-radius: 50%; animation: spin 0.8s linear infinite; }
+/* Board */
+.board { padding-block: 1rem 2.5rem; display: flex; flex-direction: column; gap: 18px; }
+.phase { display: flex; flex-direction: column; gap: 6px; }
+.phase-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; padding: 0 2px; }
+.phase-name { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); }
+.phase-meta { font-size: 13px; color: var(--text-tertiary); }
+.phase-meta b { color: var(--text-secondary); font-weight: 600; }
 
-.last-refresh { font-size: 11px; color: var(--text-tertiary); padding: 0 4px; }
+.lane-title { font-size: 13px; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; line-height: 1.25; }
+.lane-count { font-size: 13px; padding: 2px 8px; border-radius: 999px; font-weight: 600; flex-shrink: 0; }
+.lane-flag { font-size: 12px; font-weight: 600; padding: 1px 6px; border-radius: 4px; background: rgba(255,255,255,0.65); }
+.due-ok { color: var(--ok); } .due-warn { color: var(--warn); } .due-late { color: var(--late); } .due-none { color: var(--text-muted); }
 
-.board { display: flex; gap: 10px; padding: 1.25rem 1.5rem 2rem; overflow-x: auto; min-height: calc(100vh - 160px); align-items: flex-start; }
-.col { min-width: 210px; flex: 0 0 210px; display: flex; flex-direction: column; }
-.col-header { border-radius: 9px; padding: 8px 11px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
-.col-title { font-size: 11px; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; line-height: 1.3; }
-.col-count { font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600; flex-shrink: 0; }
-.col-value { font-size: 11px; font-weight: 600; color: var(--text-tertiary); margin: 0 2px 8px; }
-
-.cards-list { display: flex; flex-direction: column; gap: 7px; flex: 1; min-height: 80px; border-radius: 10px; padding: 3px; transition: background 0.12s; }
-.cards-list.drag-over { background: rgba(0,0,0,0.035); outline: 1.5px dashed var(--text-muted); outline-offset: -2px; }
-[data-theme="dark"] .cards-list.drag-over { background: rgba(255,255,255,0.04); }
-
-.card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 11px; overflow: hidden; cursor: grab; transition: box-shadow 0.15s, border-color 0.15s, opacity 0.12s; user-select: none; }
-.card:hover { border-color: var(--text-muted); box-shadow: var(--card-shadow); }
-.card.dragging { opacity: 0.35; cursor: grabbing; box-shadow: none; }
-.drag-placeholder { background: var(--hover-bg); border: 1.5px dashed var(--text-muted); border-radius: 11px; min-height: 80px; }
-
-.card-header { background: var(--header-strip); border-bottom: 0.5px solid var(--border-soft); padding: 7px 12px; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
-.card-order-label { font-size: 9px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 1px; }
-.card-order-num { font-size: 18px; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
-.rush-badge { font-size: 13px; flex-shrink: 0; }
-
-.card-body { padding: 9px 12px 10px; }
-.card-product { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; line-height: 1.3; }
-.card-size { color: var(--text-muted); font-size: 10px; font-weight: 400; }
-.card-company { font-size: 11px; color: var(--text-secondary); margin-bottom: 8px; line-height: 1.4; }
-.card-meta { display: flex; gap: 5px; flex-wrap: wrap; }
-.tag { font-size: 10px; padding: 2px 7px; border-radius: 999px; white-space: nowrap; font-weight: 500; }
-.tag-blue   { background: #ddeeff; color: #0a4080; }
-.tag-gray   { background: #efefeb; color: #555553; }
-.tag-green  { background: #e4f5d4; color: #2a5e10; }
-.tag-orange { background: #fff0e0; color: #8a4a00; }
-.tag-purple { background: #ece0f7; color: #4a2080; }
-[data-theme="dark"] .tag-blue   { background: #0a2b50; color: #a8d0f5; }
-[data-theme="dark"] .tag-gray   { background: #2a2c34; color: #b0afaa; }
-[data-theme="dark"] .tag-green  { background: #143820; color: #9fd9b5; }
-[data-theme="dark"] .tag-orange { background: #4a2c08; color: #fac97a; }
-[data-theme="dark"] .tag-purple { background: #2a1850; color: #c8a8e8; }
-
-.card-footer { padding: 7px 12px 9px; border-top: 0.5px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; gap: 6px; }
-.card-value { font-size: 11px; font-weight: 700; color: var(--text); }
-.card-due { font-size: 10px; font-weight: 600; }
-.due-ok   { color: #2d8a4e; }
-.due-warn { color: #b87a00; }
-.due-late { color: #c0392b; }
-.due-none { color: var(--text-muted); }
-[data-theme="dark"] .due-ok { color: #5cc97a; }
-[data-theme="dark"] .due-warn { color: #f5c25a; }
-[data-theme="dark"] .due-late { color: #f47c6a; }
-
-.empty-col { background: var(--empty-bg); border: 0.5px dashed var(--border); border-radius: 10px; padding: 20px 8px; text-align: center; font-size: 11px; color: var(--text-muted); min-height: 70px; display: flex; align-items: center; justify-content: center; }
-
-.toast { position: fixed; bottom: 20px; right: 20px; background: var(--text); color: var(--surface); font-size: 12px; padding: 9px 16px; border-radius: 9px; opacity: 0; transition: opacity 0.25s; z-index: 100; pointer-events: none; max-width: 360px; }
+.toast { position: fixed; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); right: calc(20px + env(safe-area-inset-right, 0px)); background: var(--toast-bg); color: var(--toast-fg); font-size: 14px; padding: 9px 16px; border-radius: 9px; opacity: 0; transition: opacity 0.25s; z-index: 100; pointer-events: none; max-width: min(360px, calc(100vw - 40px)); }
 .toast.show { opacity: 1; }
-.toast.error { background: #c0392b; color: #fff; }
+
+/* Rows view: one table per phase, a tbody per status, one row per order */
+.table-wrap { overflow-x: auto; width: fit-content; max-width: 100%; background: var(--surface); border: 0.5px solid var(--border); border-radius: 12px; }
+table.orders { border-collapse: collapse; table-layout: fixed; font-size: 14px; }
+.orders thead th { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-tertiary); text-align: left; padding: 8px 10px; border-bottom: 0.5px solid var(--border); white-space: nowrap; }
+.orders .num { text-align: right; }
+.status-row th { padding: 0; text-align: left; font-weight: inherit; border-top: 0.5px solid var(--border); }
+.status-toggle { all: unset; box-sizing: border-box; width: 100%; display: flex; align-items: center; gap: 10px; padding: 7px 12px 7px 14px; cursor: pointer; flex-wrap: wrap; }
+.status-toggle:focus-visible { outline: 2px solid currentColor; outline-offset: -3px; }
+.chev { width: 12px; height: 12px; flex-shrink: 0; transition: transform 0.15s; }
+.status-group.collapsed .chev { transform: rotate(-90deg); }
+.status-group.collapsed .order-row, .status-group.collapsed .empty-row { display: none; }
+.status-sub { font-size: 13px; font-weight: 600; opacity: 0.8; }
+.order-row { cursor: grab; }
+.order-row td { padding: 7px 10px; border-top: 0.5px solid var(--border-subtle); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; background: var(--surface); }
+.order-row:hover td { background: var(--hover-bg); }
+.order-row.dragging td { opacity: 0.35; }
+.order-row.is-rush td { background: var(--rush-bg); }
+.order-row.is-rush:hover td, .order-row.is-rush:focus-visible td { background: var(--rush-hover); }
+.order-row.is-rush td:first-child { box-shadow: inset 4px 0 0 var(--rush-edge); }
+.order-row.is-late td, .order-row.is-late td.co { color: var(--late); }
+.order-row.is-late td:first-child { box-shadow: inset 4px 0 0 var(--late); }
+.order-row td.flag { text-align: center; padding-inline: 4px; }
+.order-row td.ord { font-weight: 700; font-size: 15px; }
+.order-row td.prod .p { font-weight: 600; }
+.order-row td.co { color: var(--text-secondary); }
+.order-row td.strong { font-weight: 700; }
+.order-row td.due { font-weight: 700; font-size: 13px; }
+.empty-row td { padding: 7px 14px; color: var(--text-muted); font-size: 13px; background: var(--lane-bg); }
+.row-placeholder td { height: 32px; background: var(--hover-bg); outline: 1.5px dashed var(--text-muted); outline-offset: -3px; }
+body.compact .order-row td { padding-block: 3px; }
+.order-row:focus-visible td { background: var(--hover-bg); }
+.order-row:focus-visible td:first-child { outline: 2px solid var(--text-tertiary); outline-offset: -2px; }
+
+/* Production details popup */
+dialog#order-dialog { border: 0; padding: 0; border-radius: 14px; width: min(620px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); background: var(--surface); color: var(--text); box-shadow: 0 24px 64px rgba(0,0,0,0.28); overflow: auto; }
+dialog#order-dialog::backdrop { background: rgba(15,16,20,0.45); }
+.dlg-head { position: relative; padding: 16px 52px 16px 20px; }
+.dlg-kicker { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
+.dlg-head h2 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.01em; }
+.dlg-sub { font-size: 15px; margin-top: 3px; opacity: 0.9; }
+.dlg-close { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; border-radius: 8px; border: 0; background: rgba(255,255,255,0.6); color: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.dlg-close:hover { background: rgba(255,255,255,0.9); }
+.dlg-close:focus-visible { outline: 2px solid currentColor; }
+.dlg-close svg { width: 16px; height: 16px; }
+.dlg-body { padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 16px; }
+.dlg-dates { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.dlg-dates > div { background: var(--surface-2); border-radius: 8px; padding: 8px 12px; display: flex; flex-direction: column; gap: 2px; }
+.dlg-dates span { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-tertiary); }
+.dlg-dates b { font-size: 17px; }
+.dlg-group h3 { margin: 0 0 6px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-secondary); }
+.dlg-group dl { margin: 0; display: grid; grid-template-columns: 1fr 1fr; column-gap: 28px; }
+@media (max-width: 520px) { .dlg-group dl { grid-template-columns: 1fr; } }
+.dlg-group dl > div { display: flex; justify-content: space-between; gap: 10px; padding: 7px 2px; border-bottom: 0.5px solid var(--border-subtle); font-size: 14.5px; min-width: 0; }
+.dlg-group dt { color: var(--text-tertiary); }
+.dlg-group dd { margin: 0; font-weight: 600; text-align: right; }
+.dlg-notes { margin: 0; font-size: 15px; line-height: 1.5; background: var(--surface-2); border-radius: 8px; padding: 10px 12px; }
+.muted { color: var(--text-muted); font-weight: 400; }
+
+@media (max-width: 720px) {
+  .controls input[type="text"] { width: 100%; }
+  .controls { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
 <body>
 
-<div class="top-bar">
-  <div class="brand">
-    <div class="brand-icon">
-      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+<div class="sticky">
+  <div class="top-bar gutter">
+    <div class="brand">
+      <div class="brand-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4" rx="1"/><rect x="3" y="10" width="18" height="4" rx="1"/><rect x="3" y="16" width="18" height="4" rx="1"/></svg></div>
+      <h1>Calbox <span>/ Order Workflow · Live</span></h1>
     </div>
-    <div><h1>Calbox <span>/ Order Workflow · Live</span></h1></div>
-  </div>
-  <div class="top-right" id="top-right-controls" style="display:none;">
-    <span class="last-refresh" id="last-refresh"></span>
-    <div class="filters">
-      <input type="text" id="search" placeholder="Search by order #, company..." oninput="render()">
-      <select id="rep-filter" onchange="render()"><option value="">All reps</option></select>
+    <div class="controls">
+      <div class="controls" id="app-controls" hidden>
+      <span class="last-refresh" id="last-refresh"></span>
+      <input type="text" id="search" placeholder="Search order #, company, product…" aria-label="Search orders">
+      <select id="rep-filter" aria-label="Filter by sales rep"><option value="">All reps</option></select>
+      <button class="btn" id="hide-empty" aria-pressed="false" type="button">Hide empty stages</button>
+      <button class="btn" id="compact" aria-pressed="false" type="button">Compact</button>
+      <button class="btn" id="refresh-btn" type="button" title="Reload orders from OneDrive">
+        <svg id="refresh-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        Refresh
+      </button>
+      <span class="user-pill" id="user-pill"></span>
+      </div>
+      <button class="btn btn-icon" id="theme-toggle" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
     </div>
-    <button class="btn btn-icon" id="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">
-      <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
-    </button>
-    <button class="btn" id="refresh-btn" onclick="loadFromOneDrive()">
-      <svg id="refresh-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-      Refresh
-    </button>
-    <div class="user-pill" id="user-pill"></div>
   </div>
+  <div class="summary-bar gutter" id="summary-bar" hidden></div>
 </div>
-
-<div class="summary-bar" id="summary-bar" style="display:none;"></div>
-
-<div id="signin-screen" class="center-screen">
-  <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5"><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/><path d="M12 7v5l3 3"/></svg>
-  <h2>Connect to OneDrive</h2>
-  <p>Sign in with your Calbox Microsoft account to load orders directly from your shared Excel file. The dashboard will pull live data every time you refresh.</p>
-  <button class="ms-btn" onclick="signIn()">
-    <svg viewBox="0 0 23 23" style="width:16px;height:16px;"><path fill="#f25022" d="M0 0h11v11H0z"/><path fill="#00a4ef" d="M0 12h11v11H0z"/><path fill="#7fba00" d="M12 0h11v11H12z"/><path fill="#ffb900" d="M12 12h11v11H12z"/></svg>
+<section class="center-screen gutter" id="signin-screen">
+  <div class="center-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+  <h2>Sign in to view orders</h2>
+  <p>Use your Calbox Microsoft account. The dashboard reads the Live Orders sheet from the workflow file on OneDrive each time you sign in or refresh.</p>
+  <button class="ms-btn" id="signin-btn" type="button">
+    <svg viewBox="0 0 23 23" aria-hidden="true"><path fill="#f25022" d="M0 0h11v11H0z"/><path fill="#00a4ef" d="M0 12h11v11H0z"/><path fill="#7fba00" d="M12 0h11v11H12z"/><path fill="#ffb900" d="M12 12h11v11H12z"/></svg>
     Sign in with Microsoft
   </button>
-  <div id="signin-error" class="err" style="display:none;"></div>
-  <button class="btn btn-icon" onclick="toggleTheme()" title="Toggle dark mode" style="position:fixed;top:1rem;right:1rem;">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
-  </button>
-</div>
+  <div class="err" id="signin-error" hidden></div>
+</section>
+<section class="center-screen gutter" id="loading-screen" hidden>
+  <div class="spinner" aria-hidden="true"></div>
+  <h2>Loading orders from OneDrive…</h2>
+  <p id="loading-msg">Fetching the latest workflow data.</p>
+</section>
+<section class="center-screen gutter" id="error-screen" hidden>
+  <h2>Couldn't load the orders</h2>
+  <div class="err" id="load-error"></div>
+  <button class="btn" id="retry-btn" type="button">Try again</button>
+</section>
 
-<div id="loading-screen" class="center-screen" style="display:none;">
-  <div class="spinner"></div>
-  <h2>Loading orders from OneDrive...</h2>
-  <p id="loading-msg">Fetching the latest workflow data from your Excel file.</p>
-</div>
+<main class="board gutter" id="board" hidden></main>
+<div class="toast" id="toast" role="status"></div>
 
-<div class="board" id="board" style="display:none;"></div>
-
-<div class="toast" id="toast"></div>
+<dialog id="order-dialog" aria-labelledby="dlg-title">
+  <div class="dlg-head" id="dlg-head">
+    <div id="dlg-head-inner"></div>
+    <button class="dlg-close" id="dlg-close" type="button" aria-label="Close">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </div>
+  <div class="dlg-body" id="dlg-body"></div>
+</dialog>
 
 <script>
-// CONFIG
+// ── Config ──────────────────────────────────────────────────────────────────
 const MSAL_CONFIG = {
   auth: {
     clientId: 'bcb299b3-4989-4a82-a7cf-39bd830ee087',
@@ -238,101 +315,351 @@ const MSAL_CONFIG = {
   system: { allowRedirectInIframe: false, windowHashTimeout: 60000, iframeHashTimeout: 6000, loadFrameTimeout: 0 },
 };
 const SCOPES = ['Files.Read', 'User.Read'];
-
-// Updated OneDrive sharing link
+// OneDrive sharing link to CB_D-Workflow-2026.xlsx
 const SHARE_URL = 'https://calbox-my.sharepoint.com/:x:/p/drodrigues/IQDYNMiqjj8TTKCXTm0muxJ6AcAhFR3cTk48rwqHNYcMMCo';
+const SHEET_CANDIDATES = ['Live Orders', 'Orders', 'Sheet1'];   // first match wins, else the first sheet
 
+// ── Stages (same keys and colors as the live dashboard) ─────────────────────
 const ALL_STAGES = [
-  { key: 'New Order',             color: '#D6F5D6', textColor: '#1a5c1a', countBg: '#A8E6A8', countColor: '#0f3d0f' },
-  { key: 'Processing',            color: '#D6EAFA', textColor: '#0C447C', countBg: '#A8D0F5', countColor: '#042C53' },
-  { key: 'Pending Approval',      color: '#D6EAFA', textColor: '#0C447C', countBg: '#A8D0F5', countColor: '#042C53' },
-  { key: 'Approved',              color: '#D6EAFA', textColor: '#0C447C', countBg: '#A8D0F5', countColor: '#042C53' },
-  { key: 'In Queue for Printing', color: '#FDE8C8', textColor: '#7A4000', countBg: '#FAC97A', countColor: '#4A2500' },
-  { key: 'Printing',              color: '#FDE8C8', textColor: '#7A4000', countBg: '#FAC97A', countColor: '#4A2500' },
-  { key: 'In Queue for Cutting',  color: '#C8F0EE', textColor: '#0A4F4A', countBg: '#8ADBD6', countColor: '#063530' },
-  { key: 'Cutting',               color: '#C8F0EE', textColor: '#0A4F4A', countBg: '#8ADBD6', countColor: '#063530' },
-  { key: 'Ready for Stripping',   color: '#E8D6F5', textColor: '#4A2080', countBg: '#C9A0E8', countColor: '#2D1054' },
-  { key: 'Stripping',             color: '#E8D6F5', textColor: '#4A2080', countBg: '#C9A0E8', countColor: '#2D1054' },
-  { key: 'Gluing/Stapling',       color: '#FAD6E8', textColor: '#8C1A4A', countBg: '#F0A0C8', countColor: '#5C0F30' },
-  { key: 'Sent to CB2',           color: '#E6F6FB', textColor: '#0A4F6E', countBg: '#9FD9EF', countColor: '#053A52' },
-  { key: 'Palletizing',           color: '#F1EFE8', textColor: '#444441', countBg: '#D3D1C7', countColor: '#2C2C2A' },
+  { key: 'New Order',             color: '#D6F5D6', textColor: '#1a5c1a', countBg: '#A8E6A8', countColor: '#0f3d0f', edge: '#5cb85c' },
+  { key: 'Processing',            color: '#D6EAFA', textColor: '#0C447C', countBg: '#A8D0F5', countColor: '#042C53', edge: '#4a90d9' },
+  { key: 'Pending Approval',      color: '#D6EAFA', textColor: '#0C447C', countBg: '#A8D0F5', countColor: '#042C53', edge: '#4a90d9' },
+  { key: 'Approved',              color: '#D6EAFA', textColor: '#0C447C', countBg: '#A8D0F5', countColor: '#042C53', edge: '#4a90d9' },
+  { key: 'In Queue for Printing', color: '#FDE8C8', textColor: '#7A4000', countBg: '#FAC97A', countColor: '#4A2500', edge: '#e09a2c' },
+  { key: 'Printing',              color: '#FDE8C8', textColor: '#7A4000', countBg: '#FAC97A', countColor: '#4A2500', edge: '#e09a2c' },
+  { key: 'In Queue for Cutting',  color: '#C8F0EE', textColor: '#0A4F4A', countBg: '#8ADBD6', countColor: '#063530', edge: '#2bb3a8' },
+  { key: 'Cutting',               color: '#C8F0EE', textColor: '#0A4F4A', countBg: '#8ADBD6', countColor: '#063530', edge: '#2bb3a8' },
+  { key: 'Ready for Stripping',   color: '#E8D6F5', textColor: '#4A2080', countBg: '#C9A0E8', countColor: '#2D1054', edge: '#9a62cf' },
+  { key: 'Stripping',             color: '#E8D6F5', textColor: '#4A2080', countBg: '#C9A0E8', countColor: '#2D1054', edge: '#9a62cf' },
+  { key: 'Gluing/Stapling',       color: '#FAD6E8', textColor: '#8C1A4A', countBg: '#F0A0C8', countColor: '#5C0F30', edge: '#d5568f' },
+  { key: 'Sent to CB2',           color: '#E6F6FB', textColor: '#0A4F6E', countBg: '#9FD9EF', countColor: '#053A52', edge: '#3fa9d1' },
+  { key: 'Palletizing',           color: '#F1EFE8', textColor: '#444441', countBg: '#D3D1C7', countColor: '#2C2C2A', edge: '#9a988e' },
 ];
+// Grouping of stages into department phases. machine = which MSF load the phase reports.
+const PHASES = [
+  { name: 'Pre-press',  stages: ['New Order', 'Processing', 'Pending Approval', 'Approved'] },
+  { name: 'Print',      stages: ['In Queue for Printing', 'Printing'], machine: 'Durst' },
+  { name: 'Cut',        stages: ['In Queue for Cutting', 'Cutting'], machine: 'Elitron' },
+  { name: 'Finishing',  stages: ['Ready for Stripping', 'Stripping', 'Gluing/Stapling'] },
+  { name: 'Ship',       stages: ['Sent to CB2', 'Palletizing'] },
+];
+const stageByKey = Object.fromEntries(ALL_STAGES.map(s => [s.key, s]));
+
+// ── Data ────────────────────────────────────────────────────────────────────
+// Rows come from the Live Orders sheet, keyed by the sheet's own header names.
+const CLOSED_STATUSES = ['completed', 'cancelled', 'canceled'];   // never shown, any capitalization
 const stageKeys = ALL_STAGES.map(s => s.key);
+const num = v => (v === null || v === undefined || v === '' || (typeof v === 'string' && v.startsWith('#'))) ? null : (isNaN(Number(v)) ? null : Number(v));
+const txt = v => (v === null || v === undefined || (typeof v === 'string' && v.startsWith('#'))) ? '' : String(v).trim();
+// Dates arrive as Excel serial numbers (read without cellDates), so convert with SheetJS's date-code
+// parser, which has no time zone. Typed text dates (11/5/2026 or 2026-11-05) are handled too.
+const pad2 = n => String(n).padStart(2, '0');
+function ymd(v) {
+  if (v === null || v === undefined || v === '') return null;
+  if (typeof v === 'number') { const d = XLSX.SSF.parse_date_code(v); return d && d.y > 1990 ? `${d.y}-${pad2(d.m)}-${pad2(d.d)}` : null; }
+  if (v instanceof Date) return `${v.getFullYear()}-${pad2(v.getMonth() + 1)}-${pad2(v.getDate())}`;
+  const t = String(v).trim();
+  let m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/); if (m) return `${m[1]}-${pad2(m[2])}-${pad2(m[3])}`;
+  m = t.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2}|\d{4})$/); if (m) return `${m[3].length === 2 ? '20' + m[3] : m[3]}-${pad2(m[1])}-${pad2(m[2])}`;
+  return null;
+}
+function mapRow(r, i) {
+  const rush = r['Rush'];
+  const statusRaw = txt(r['Stages/Status']);
+  return {
+    key: 'k' + (r.__rowNum__ ?? i),                       // row-based key: Order No. is not unique (split releases share one)
+    id: txt(r['Order No.']).replace(/\.0$/, ''),
+    po: txt(r['P/O #']),
+    company: txt(r['Company Name']),
+    product: txt(r['Product Description']),
+    msf: num(r['MSF.']),                            // true MSF (thousand sq ft)
+    qty: num(r['QTY']),
+    received: ymd(r['Received Date']),
+    approved: ymd(r['Approved Day']),
+    due: ymd(r['Due Date']),
+    statusRaw,
+    status: stageKeys.includes(statusRaw) ? statusRaw : 'New Order',
+    rush: rush === '🚩' || rush === true || rush === 1 || /^(yes|y|x|rush)$/i.test(txt(rush)),
+    rep: txt(r['Sales Rep']),
+    designer: txt(r['Designer']),
+    boardSqft: num(r['Board MSF.']),                // despite the header, this column holds square feet
+    estPrintTime: num(r['Est. Print Time']),        // hours
+    cutDuration: r['Cut Duration'] ?? null,
+    raw: r,
+  };
+}
 let orders = [];
-let dragSrcId = null;
-let placeholder = null;
-let msalInstance = null;
-let currentAccount = null;
+let unrecognized = [];
+let loaded = false;
 
-// THEME
-function applyTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme);
-  localStorage.setItem('cb-theme', theme);
-  const icon = document.getElementById('theme-icon');
-  if (icon) {
-    // sun for light mode, moon for dark
-    icon.innerHTML = theme === 'dark'
-      ? '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>'
-      : '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>';
+function parseExcel(arrayBuf) {
+  const wb = XLSX.read(new Uint8Array(arrayBuf), { type: 'array' });
+  const sheetName = SHEET_CANDIDATES.find(n => wb.SheetNames.includes(n)) || wb.SheetNames[0];
+  const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: null });
+  return rows.map(mapRow).filter(o => o.id);
+}
+
+// ── Preferences (theme + view toggles), stored per browser ──────────────────
+const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+function currentTheme() {
+  const t = document.documentElement.getAttribute('data-theme');
+  if (t) return t;
+  return window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+const savedTheme = store.get('cb-theme'); if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+document.getElementById('theme-toggle').onclick = () => { const t = currentTheme() === 'dark' ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', t); store.set('cb-theme', t); };
+
+function bindToggle(id, key, apply) {
+  const btn = document.getElementById(id);
+  const set = on => { btn.setAttribute('aria-pressed', on); apply(on); store.set(key, on ? '1' : '0'); };
+  btn.onclick = () => set(btn.getAttribute('aria-pressed') !== 'true');
+  set(store.get(key) === '1');
+}
+let hideEmpty = false;
+let collapsedSet = new Set(); try { collapsedSet = new Set(JSON.parse(store.get('cb-h-collapsed') || '[]')); } catch {}
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+// Parse YYYY-MM-DD as a LOCAL date. new Date('2026-11-12') is UTC midnight, which is the
+// previous evening in California and shifts due labels / overdue counts by a day.
+function parseLocal(s) { if (!s) return null; const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); }
+function daysUntil(due) { const t = new Date(); t.setHours(0, 0, 0, 0); return Math.round((parseLocal(due) - t) / 86400000); }
+function dueInfo(due) {
+  if (!due) return { cls: 'due-none', label: 'No date', late: false };
+  const diff = daysUntil(due);
+  const label = 'Due ' + parseLocal(due).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return diff < 0 ? { cls: 'due-late', label, late: true } : diff <= 3 ? { cls: 'due-warn', label, late: false } : { cls: 'due-ok', label, late: false };
+}
+const fmtMSF = v => v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function fmtDuration(v) {
+  if (v === null || v === undefined || v === '') return null;
+  if (v instanceof Date) return `${v.getHours()}h ${String(v.getMinutes()).padStart(2, '0')}m`;
+  const n = num(v); if (n != null) return fmtPrintTime(n);
+  return txt(v) || null;
+}
+function fmtPrintTime(v) { if (v == null) return null; if (typeof v === 'number') { const h = Math.floor(v), m = Math.round((v - h) * 60); return `${h}h ${String(m).padStart(2, '0')}m`; } return String(v); }
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function showToast(msg, error) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.toggle('error', !!error); t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), error ? 6000 : 2600); }
+
+// ── Filters ─────────────────────────────────────────────────────────────────
+function initFilters() {
+  const sel = document.getElementById('rep-filter'), keep = sel.value;
+  sel.length = 1;
+  [...new Set(orders.map(o => o.rep).filter(Boolean))].sort().forEach(r => sel.add(new Option(r, r)));
+  if ([...sel.options].some(o => o.value === keep)) sel.value = keep;
+}
+document.getElementById('rep-filter').onchange = render;
+document.getElementById('search').oninput = render;
+function getFiltered() {
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  const rep = document.getElementById('rep-filter').value;
+  return orders.filter(o => (!q || o.company.toLowerCase().includes(q) || o.product.toLowerCase().includes(q) || o.id.includes(q) || o.po.toLowerCase().includes(q)) && (!rep || o.rep === rep));
+}
+
+// ── Render ──────────────────────────────────────────────────────────────────
+function render() {
+  if (!loaded) return;
+  const filtered = getFiltered();
+  const sum = (arr, f) => arr.reduce((s, o) => s + (f(o) || 0), 0);
+  const inStages = keys => filtered.filter(o => keys.includes(o.status));
+  const overdue = filtered.filter(o => o.due && daysUntil(o.due) < 0).length;
+  const printOrders = inStages(['In Queue for Printing', 'Printing']), cutOrders = inStages(['In Queue for Cutting', 'Cutting']);
+  const durst = sum(printOrders, o => o.boardSqft) / 1000, elitron = sum(cutOrders, o => o.boardSqft) / 1000;
+  const durstMissing = printOrders.filter(o => o.boardSqft == null).length, elitronMissing = cutOrders.filter(o => o.boardSqft == null).length;
+  const booked = sum(filtered, o => o.msf);
+
+  document.getElementById('summary-bar').innerHTML = `
+    <div class="stat green"><div class="stat-label">Total booked MSF</div><div class="stat-val">${booked ? fmtMSF(booked) : '—'}</div></div>
+    <div class="stat blue"><div class="stat-label">Durst board MSF</div><div class="stat-val">${durst ? fmtMSF(durst) : '—'}</div>${durstMissing ? `<div class="stat-note">${durstMissing} order${durstMissing === 1 ? '' : 's'} not sized</div>` : ''}</div>
+    <div class="stat rose"><div class="stat-label">Elitron board MSF</div><div class="stat-val">${elitron ? fmtMSF(elitron) : '—'}</div>${elitronMissing ? `<div class="stat-note">${elitronMissing} order${elitronMissing === 1 ? '' : 's'} not sized</div>` : ''}</div>
+    <div class="stat"><div class="stat-label">Orders</div><div class="stat-val">${filtered.length}</div></div>
+    <div class="stat"><div class="stat-label">Rush</div><div class="stat-val">${filtered.filter(o => o.rush).length}</div></div>
+    <div class="stat"><div class="stat-label">Overdue</div><div class="stat-val ${overdue ? 'late' : ''}">${overdue}</div></div>`;
+
+  document.getElementById('board').innerHTML = renderRows(sum, inStages);
+  attachRowDrag();
+}
+
+// ── Order table ───────────────────────────────────────────────────────────────
+// Fixed column widths in px (rush, order no., product, company, qty, msf, est. print, est. cut, rep, received, approved, due).
+// Product and Company are sized to the longest names in Live Orders; longer text is cut off with "…" and shown in full on hover.
+const COL_WIDTHS = [32, 96, 262, 170, 72, 72, 96, 86, 96, 92, 96, 80];
+const TABLE_WIDTH = COL_WIDTHS.reduce((a, b) => a + b, 0);
+const COLGROUP = '<colgroup>' + COL_WIDTHS.map(w => `<col style="width:${w}px">`).join('') + '</colgroup>';
+const THEAD = '<thead><tr><th aria-label="Rush"></th><th>Order No.</th><th>Product</th><th>Company</th><th class="num">Qty</th><th class="num">MSF</th><th class="num">Est. Print</th><th class="num">Est. Cut</th><th>Sales rep</th><th>Received</th><th>Approved</th><th>Due</th></tr></thead>';
+const shortDate = s => s ? parseLocal(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—';
+const CHEV = '<svg class="chev" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M2.5 4.5 6 8l3.5-3.5"/></svg>';
+
+
+function rowHTML(o) {
+  const { cls, label, late } = dueInfo(o.due);
+  return `<tr class="order-row${o.rush ? ' is-rush' : ''}${late ? ' is-late' : ''}" draggable="true" tabindex="0" data-id="${esc(o.key)}" aria-label="Order ${esc(o.id)}, open production details">
+    <td class="flag">${o.rush ? '<span title="Rush">🚩</span>' : ''}</td>
+    <td class="ord">${esc(o.id)}</td>
+    <td class="prod" title="${esc(o.product)}"><span class="p">${esc(o.product) || '—'}</span></td>
+    <td class="co" title="${esc(o.company)}">${esc(o.company) || '—'}</td>
+    <td class="num">${o.qty != null ? o.qty.toLocaleString() : '—'}</td>
+    <td class="num">${o.msf != null ? fmtMSF(o.msf) : '—'}</td>
+    <td class="num">${fmtPrintTime(o.estPrintTime) || '—'}</td>
+    <td class="num">${fmtDuration(o.cutDuration) || '—'}</td>
+    <td>${esc(o.rep) || '—'}</td>
+    <td>${shortDate(o.received)}</td>
+    <td>${shortDate(o.approved)}</td>
+    <td class="due ${cls}">${label.replace('Due ', '')}</td>
+  </tr>`;
+}
+
+function renderRows(sum, inStages) {
+  return PHASES.map(phase => {
+    const phaseOrders = inStages(phase.stages);
+    const groups = phase.stages.map(key => {
+      const s = stageByKey[key];
+      const rows = phaseOrders.filter(o => o.status === key)
+        .sort((a, b) => (b.rush - a.rush) || ((a.due || '9') < (b.due || '9') ? -1 : 1));
+      if (hideEmpty && !rows.length) return '';
+      const collapsed = collapsedSet.has(key);
+      const late = rows.filter(o => o.due && daysUntil(o.due) < 0).length, rush = rows.filter(o => o.rush).length;
+      return `<tbody class="status-group ${collapsed ? 'collapsed' : ''}" data-stage="${esc(key)}">
+        <tr class="status-row"><th colspan="12" scope="rowgroup" style="background:${s.color};color:${s.textColor};box-shadow:inset 4px 0 0 ${s.edge}">
+          <button class="status-toggle" type="button" data-stage="${esc(key)}" aria-expanded="${!collapsed}">
+            ${CHEV}<span class="lane-title">${esc(key)}</span>
+            <span class="lane-count" style="background:${s.countBg};color:${s.countColor}">${rows.length}</span>
+            ${rows.length ? `<span class="status-sub">${fmtMSF(sum(rows, o => o.msf))} MSF</span>` : ''}
+            ${rush ? `<span class="lane-flag">🚩 ${rush} rush</span>` : ''}${late ? `<span class="lane-flag">${late} overdue</span>` : ''}
+          </button>
+        </th></tr>
+        ${rows.length ? rows.map(rowHTML).join('') : '<tr class="empty-row"><td colspan="12">No orders. Drag a row here.</td></tr>'}
+      </tbody>`;
+    }).join('');
+    if (!groups) return '';
+    const machine = phase.machine ? ` · <b>${phase.machine} ${fmtMSF(sum(phaseOrders, o => o.boardSqft) / 1000)} board MSF</b>` : '';
+    return `<div class="phase">
+      <div class="phase-head"><span class="phase-name">${phase.name}</span><span class="phase-meta">${phaseOrders.length} order${phaseOrders.length === 1 ? '' : 's'}${machine}</span></div>
+      <div class="table-wrap"><table class="orders" style="width:${TABLE_WIDTH}px">${COLGROUP}${THEAD}${groups}</table></div>
+    </div>`;
+  }).join('');
+}
+
+// Collapse / expand a status, or open an order's production details
+document.getElementById('board').addEventListener('click', e => {
+  const t = e.target.closest('.status-toggle');
+  if (t) {
+    const k = t.dataset.stage; collapsedSet.has(k) ? collapsedSet.delete(k) : collapsedSet.add(k);
+    store.set('cb-h-collapsed', JSON.stringify([...collapsedSet])); render(); return;
   }
-}
-function toggleTheme() {
-  const current = document.documentElement.getAttribute('data-theme') || 'light';
-  applyTheme(current === 'dark' ? 'light' : 'dark');
-}
-// Load saved theme or auto-detect
-(function initTheme() {
-  const saved = localStorage.getItem('cb-theme');
-  if (saved) { applyTheme(saved); }
-  else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) { applyTheme('dark'); }
-  else { applyTheme('light'); }
-})();
+  const item = e.target.closest('.order-row'); if (item) openOrder(item.dataset.id);
+});
+document.getElementById('board').addEventListener('keydown', e => {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.order-row')) { e.preventDefault(); openOrder(e.target.dataset.id); }
+});
 
-// AUTH
+// ── Production details popup ────────────────────────────────────────────────
+// Production details = the gray-shaded columns AB:AW of the Live Orders sheet, in workbook order.
+// Left out on purpose: the cost columns (Board Value $, Order Value $, Est. Ink Usage, Est. Ink Cost) and Print Mode Settings.
+// Labels are the workbook's own headers. Each field: [header, formatter].
+const sqft = v => { const n = num(v); return n == null ? null : `${Math.round(n).toLocaleString()} sq ft (${(n / 1000).toFixed(3)} MSF)`; };
+const count = v => { const n = num(v); return n == null ? null : n.toLocaleString(); };
+const hours = v => fmtDuration(v);
+const days = v => { const n = num(v); return n == null ? null : `${n} day${n === 1 ? '' : 's'}`; };
+const date = v => { const d = ymd(v); return d ? parseLocal(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : null; };
+const DETAIL_GROUPS = [
+  { title: 'Board', fields: [['Board Type 2', txt], ['Board Size', txt], ['No. Up', count], ['No. Sheets Printed', count], ['QTY-Max', count], ['QTY-Min', count]] },
+  { title: 'Footage and machine time', fields: [['Product MSF.', sqft], ['Board MSF.', sqft], ['Est. Print Time', hours], ['Print Duration', hours], ['Cut Duration', hours], ['Est. Turnaround Time', days]] },
+  { title: 'Close-out', fields: [['No. Pallets', count], ['Print Operator', txt], ['Cut Operator', txt], ['Completion Date', date]] },
+];
+const dlg = document.getElementById('order-dialog');
+function openOrder(id) {
+  const o = orders.find(x => x.key === id); if (!o) return;
+  const s = stageByKey[o.status], { cls, label } = dueInfo(o.due);
+  document.getElementById('dlg-head').style.cssText = `background:${s.color};color:${s.textColor};box-shadow:inset 0 -3px 0 ${s.edge}`;
+  document.getElementById('dlg-head-inner').innerHTML = `
+    <div class="dlg-kicker"><span class="lane-count" style="background:${s.countBg};color:${s.countColor}">${esc(o.status)}</span>${o.rush ? '<span class="lane-flag">🚩 Rush</span>' : ''}</div>
+    <h2 id="dlg-title">Order ${esc(o.id)}</h2>
+    <div class="dlg-sub"><b>${esc(o.product) || '—'}</b> · ${esc(o.company) || '—'}${o.po ? ` · P/O ${esc(o.po)}` : ''}</div>`;
+  const dates = `<div class="dlg-dates">
+      <div><span>Approved</span><b>${o.approved ? parseLocal(o.approved).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Not yet'}</b></div>
+      <div><span>Due</span><b class="${cls}">${o.due ? label.replace('Due ', '') + ', ' + parseLocal(o.due).getFullYear() : 'No date'}</b></div>
+      <div><span>Designer</span><b>${esc(o.designer) || '<span class="muted">Not assigned</span>'}</b></div>
+    </div>`;
+  const groups = DETAIL_GROUPS.map(g => `<section class="dlg-group"><h3>${g.title}</h3><dl>${g.fields.map(([k, f]) => {
+      const v = f(o.raw[k]); return `<div><dt>${esc(k)}</dt><dd>${v == null || v === '' ? '<span class="muted">—</span>' : esc(v)}</dd></div>`;
+    }).join('')}</dl></section>`).join('');
+  const prodNotes = txt(o.raw['Production Notes']);
+  const notes = `<section class="dlg-group"><h3>Production Notes</h3><p class="dlg-notes">${prodNotes ? esc(prodNotes) : '<span class="muted">None</span>'}</p></section>`;
+  document.getElementById('dlg-body').innerHTML = dates + groups + notes;
+  dlg.showModal();
+}
+document.getElementById('dlg-close').onclick = () => dlg.close();
+dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+
+// Drag a row to another status (vertical: position by Y)
+function attachRowDrag() {
+  document.querySelectorAll('.order-row').forEach(r => {
+    r.addEventListener('dragstart', e => { dragSrcId = r.dataset.id; r.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', dragSrcId); });
+    r.addEventListener('dragend', () => { r.classList.remove('dragging'); placeholder?.remove(); placeholder = null; dragSrcId = null; });
+  });
+  document.querySelectorAll('.status-group').forEach(g => {
+    g.addEventListener('dragover', e => {
+      e.preventDefault(); if (!dragSrcId) return; e.dataTransfer.dropEffect = 'move';
+      if (g.classList.contains('collapsed')) return;
+      if (!placeholder || placeholder.tagName !== 'TR') { placeholder?.remove(); placeholder = document.createElement('tr'); placeholder.className = 'row-placeholder'; placeholder.innerHTML = '<td colspan="12"></td>'; }
+      const empty = g.querySelector('.empty-row'); if (empty) empty.hidden = true;
+      const after = [...g.querySelectorAll('.order-row:not(.dragging)')].reduce((acc, el) => {
+        const r = el.getBoundingClientRect(), off = e.clientY - r.top - r.height / 2;
+        return off < 0 && off > acc.off ? { off, el } : acc;
+      }, { off: -Infinity }).el;
+      after ? g.insertBefore(placeholder, after) : g.appendChild(placeholder);
+    });
+    g.addEventListener('drop', e => {
+      e.preventDefault(); if (!dragSrcId) return;
+      const o = orders.find(x => x.key === dragSrcId);
+      if (o && o.status !== g.dataset.stage) { o.status = g.dataset.stage; showToast(`#${o.id} moved to ${g.dataset.stage} (visual only, not saved to Excel)`); }
+      render();
+    });
+  });
+}
+
+let dragSrcId = null, placeholder = null;
+
+// ── Screens ─────────────────────────────────────────────────────────────────
+function show(screen) {
+  for (const id of ['signin-screen', 'loading-screen', 'error-screen']) document.getElementById(id).hidden = id !== screen;
+  const app = screen === 'app';
+  document.getElementById('board').hidden = !app;
+  document.getElementById('summary-bar').hidden = !app;
+}
+
+// ── Auth (MSAL redirect flow) ───────────────────────────────────────────────
+let msalInstance = null, currentAccount = null;
+function showSigninError(msg) { const e = document.getElementById('signin-error'); e.textContent = msg; e.hidden = false; }
+
 async function initAuth() {
   try {
-    if (typeof msal === 'undefined') {
-      throw new Error('MSAL library failed to load. Check your internet connection and refresh.');
-    }
+    if (typeof msal === 'undefined') throw new Error('The Microsoft sign-in library did not load. Check your internet connection and refresh the page.');
     msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
     await msalInstance.initialize();
     const resp = await msalInstance.handleRedirectPromise();
-    if (resp && resp.account) {
-      currentAccount = resp.account;
-      msalInstance.setActiveAccount(resp.account);
-      onSignedIn();
-      return;
-    }
-    const accounts = msalInstance.getAllAccounts();
-    if (accounts.length > 0) {
-      currentAccount = accounts[0];
-      msalInstance.setActiveAccount(accounts[0]);
-      onSignedIn();
-    }
+    const account = resp?.account || msalInstance.getAllAccounts()[0];
+    if (account) { currentAccount = account; msalInstance.setActiveAccount(account); onSignedIn(); }
   } catch (err) {
     console.error('Auth init failed:', err);
-    const errBox = document.getElementById('signin-error');
-    if (errBox) { errBox.textContent = 'Initialization error: ' + (err.message || err); errBox.style.display = 'block'; }
+    showSigninError('Sign-in could not start: ' + (err.errorMessage || err.message || err));
   }
 }
 
 async function signIn() {
-  document.getElementById('signin-error').style.display = 'none';
+  document.getElementById('signin-error').hidden = true;
   try {
     if (!msalInstance) await initAuth();
-    if (!msalInstance) throw new Error('Authentication library failed to load. Please refresh the page.');
+    if (!msalInstance) throw new Error('The sign-in library failed to load. Refresh the page and try again.');
     await msalInstance.loginRedirect({ scopes: SCOPES });
   } catch (err) {
     console.error(err);
-    const errBox = document.getElementById('signin-error');
-    errBox.textContent = 'Sign-in failed: ' + (err.errorMessage || err.message || err);
-    errBox.style.display = 'block';
+    showSigninError('Sign-in failed: ' + (err.errorMessage || err.message || err));
   }
 }
 
 function signOut() {
-  if (!msalInstance || !currentAccount) return;
-  msalInstance.logoutRedirect({ account: currentAccount });
+  if (msalInstance && currentAccount) msalInstance.logoutRedirect({ account: currentAccount });
 }
 
 async function getAccessToken() {
@@ -340,261 +667,73 @@ async function getAccessToken() {
     const resp = await msalInstance.acquireTokenSilent({ scopes: SCOPES, account: currentAccount });
     return resp.accessToken;
   } catch (err) {
-    if (err instanceof msal.InteractionRequiredAuthError) {
-      await msalInstance.acquireTokenRedirect({ scopes: SCOPES });
-      return null;
-    }
+    if (err instanceof msal.InteractionRequiredAuthError) { await msalInstance.acquireTokenRedirect({ scopes: SCOPES }); return null; }
     throw err;
   }
 }
 
 function onSignedIn() {
-  document.getElementById('signin-screen').style.display = 'none';
-  document.getElementById('top-right-controls').style.display = 'flex';
-  applyTheme(localStorage.getItem('cb-theme') || 'light');
-  const name = currentAccount.name || currentAccount.username;
-  const initials = name.split(/[ @.]/).filter(Boolean).slice(0, 2).map(s => s[0].toUpperCase()).join('');
-  document.getElementById('user-pill').innerHTML = `
-    <span class="user-avatar">${initials}</span>
-    <span>${name}</span>
-    <button class="signout-btn" onclick="signOut()">Sign out</button>
-  `;
+  const name = currentAccount.name || currentAccount.username || '';
+  const initials = name.split(/[ @.]/).filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('');
+  document.getElementById('user-pill').innerHTML = `<span class="user-avatar" aria-hidden="true">${esc(initials)}</span><span class="user-name" title="${esc(currentAccount.username || '')}">${esc(name)}</span><button class="signout-btn" id="signout-btn" type="button">Sign out</button>`;
+  document.getElementById('signout-btn').onclick = signOut;
+  document.getElementById('app-controls').hidden = false;
   loadFromOneDrive();
 }
 
+// ── Load the workbook from OneDrive ─────────────────────────────────────────
 function encodeShareUrl(url) {
   const b64 = btoa(unescape(encodeURIComponent(url)));
   return 'u!' + b64.replace(/=+$/, '').replace(/\//g, '_').replace(/\+/g, '-');
 }
-
+function graphError(status) {
+  if (status === 401) return 'Your sign-in has expired. Sign out, then sign in again.';
+  if (status === 403) return 'Your Microsoft account does not have access to the workflow file. Ask the file owner to share it with you.';
+  if (status === 404) return 'The workflow file was not found. It may have been moved, renamed, or its sharing link changed.';
+  return `OneDrive returned an error (${status}). Try again in a minute.`;
+}
+let loading = false;
 async function loadFromOneDrive() {
-  setLoading(true, 'Connecting to OneDrive...');
-  const refreshIcon = document.getElementById('refresh-icon');
-  if (refreshIcon) refreshIcon.classList.add('spin');
+  if (loading) return; loading = true;
+  const firstLoad = !loaded, icon = document.getElementById('refresh-icon');
+  if (firstLoad) { show('loading-screen'); document.getElementById('loading-msg').textContent = 'Connecting to OneDrive…'; }
+  icon.classList.add('spin');
   try {
     const token = await getAccessToken();
-    const shareId = encodeShareUrl(SHARE_URL);
-    setLoading(true, 'Downloading Excel file...');
-    const resp = await fetch(`https://graph.microsoft.com/v1.0/shares/${shareId}/driveItem/content`, {
-      headers: { Authorization: 'Bearer ' + token }
-    });
-    if (!resp.ok) {
-      const errText = await resp.text();
-      throw new Error(`OneDrive returned ${resp.status}: ${errText.slice(0,200)}`);
-    }
-    setLoading(true, 'Parsing orders...');
-    const buffer = await resp.arrayBuffer();
-    const parsed = parseExcel(buffer);
-    if (!parsed.length) throw new Error('No order rows found in the Excel file.');
-    orders = parsed;
+    if (!token) return;                                     // redirecting to Microsoft to renew sign-in
+    if (firstLoad) document.getElementById('loading-msg').textContent = 'Downloading the workflow file…';
+    const resp = await fetch(`https://graph.microsoft.com/v1.0/shares/${encodeShareUrl(SHARE_URL)}/driveItem/content`, { headers: { Authorization: 'Bearer ' + token } });
+    if (!resp.ok) { console.error('Graph', resp.status, (await resp.text()).slice(0, 300)); throw new Error(graphError(resp.status)); }
+    const all = parseExcel(await resp.arrayBuffer());
+    if (!all.length) throw new Error('No order rows were found on the Live Orders sheet.');
+    orders = all.filter(o => !CLOSED_STATUSES.includes(o.statusRaw.toLowerCase()));
+    unrecognized = orders.filter(o => o.statusRaw && !stageKeys.includes(o.statusRaw));
+    loaded = true;
     initFilters();
-    setLoading(false);
-    document.getElementById('summary-bar').style.display = 'flex';
-    document.getElementById('board').style.display = 'flex';
+    show('app');
     render();
-    document.getElementById('last-refresh').textContent = `Updated ${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
-    showToast(`Loaded ${orders.length} orders from OneDrive`);
+    document.getElementById('last-refresh').textContent = 'Updated ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    showToast(unrecognized.length
+      ? `Loaded ${orders.length} orders. ${unrecognized.length} ha${unrecognized.length === 1 ? 's a status' : 've statuses'} the dashboard doesn't recognize, shown under New Order.`
+      : `Loaded ${orders.length} orders from OneDrive`);
   } catch (err) {
     console.error(err);
-    setLoading(false);
-    showToast('Could not load file: ' + (err.message || err), true);
+    const msg = err.message || String(err);
+    if (firstLoad) { document.getElementById('load-error').textContent = msg; show('error-screen'); }
+    else showToast('Could not refresh: ' + msg, true);     // keep showing the last good data
   } finally {
-    if (refreshIcon) refreshIcon.classList.remove('spin');
+    loading = false; icon.classList.remove('spin');
   }
 }
 
-function setLoading(isLoading, msg) {
-  document.getElementById('loading-screen').style.display = isLoading ? 'flex' : 'none';
-  if (isLoading) {
-    document.getElementById('summary-bar').style.display = 'none';
-    document.getElementById('board').style.display = 'none';
-    if (msg) document.getElementById('loading-msg').textContent = msg;
-  }
-}
+document.getElementById('signin-btn').onclick = signIn;
+document.getElementById('refresh-btn').onclick = loadFromOneDrive;
+document.getElementById('retry-btn').onclick = loadFromOneDrive;
 
-// EXCEL PARSING — updated for new columns
-function parseExcel(arrayBuf) {
-  const wb = XLSX.read(new Uint8Array(arrayBuf), { type: 'array', cellDates: true });
-  // Try common sheet names in order, fall back to first sheet
-  const candidates = ['Live Orders', 'Orders', 'Sheet1'];
-  let sheetName = candidates.find(n => wb.SheetNames.includes(n)) || wb.SheetNames[0];
-  const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: null });
-  return rows.filter(r => r['Order No.'] != null).map(r => {
-    const fmtDate = v => v instanceof Date ? v.toISOString().slice(0,10) : (v ? String(v).slice(0,10) : null);
-    const rush = r['Rush'], status = r['Stages/Status'];
-    return {
-      id:           String(r['Order No.']).replace(/\.0$/,''),
-      company:      r['Company Name']        || '',
-      product:      r['Product Description'] || '',
-      size:         r['Product Size']        || '',
-      productMsf:   r['Product MSF.'] != null ? parseFloat(Number(r['Product MSF.']).toFixed(2)) : null,
-      boardMsf:     r['Board MSF.']   != null ? parseFloat(Number(r['Board MSF.']).toFixed(2))   : null,
-      estPrintTime: r['EST. Print Time']     || r['Est. Print Time'] || null,
-      printDuration:r['Print Duration']      || null,
-      cutDuration:  r['Cut Duration']        || null,
-      qty:          r['QTY'] != null ? Math.round(Number(r['QTY'])) : null,
-      due:          fmtDate(r['Due Date']),
-      rep:          r['Sales Rep']  || '',
-      designer:     r['Designer']   || '',
-      value:        r['Order Value $'] != null ? parseFloat(Number(r['Order Value $']).toFixed(2)) : null,
-      status:       stageKeys.includes(status) ? status : 'New Order',
-      rush:         rush === '🚩' || rush === true || rush === 1 || String(rush||'').toLowerCase() === 'yes',
-    };
-  });
-}
-
-// UI HELPERS
-function initFilters() {
-  const reps = [...new Set(orders.map(o => o.rep).filter(Boolean))].sort();
-  const sel = document.getElementById('rep-filter');
-  sel.innerHTML = '<option value="">All reps</option>';
-  reps.forEach(r => { const opt = document.createElement('option'); opt.value = r; opt.textContent = r; sel.appendChild(opt); });
-}
-
-function getFiltered() {
-  const q = document.getElementById('search').value.toLowerCase();
-  const rep = document.getElementById('rep-filter').value;
-  return orders.filter(o =>
-    (!q || o.company.toLowerCase().includes(q) || o.product.toLowerCase().includes(q) || o.id.includes(q)) &&
-    (!rep || o.rep === rep)
-  );
-}
-
-function dueInfo(due) {
-  if (!due) return { cls: 'due-none', label: 'No date' };
-  const today = new Date(); today.setHours(0,0,0,0);
-  const d = new Date(due); const diff = Math.ceil((d - today) / 86400000);
-  const label = 'Due ' + d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  return diff < 0 ? { cls:'due-late', label } : diff <= 3 ? { cls:'due-warn', label } : { cls:'due-ok', label };
-}
-
-function fmtMoney(v) { return v == null ? null : '$' + Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-function fmtMSF(v)   { return parseFloat(v.toFixed(2)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-function fmtPrintTime(v) {
-  if (v == null) return null;
-  // If a Date or hh:mm string, normalize. If a number, treat as hours.
-  if (v instanceof Date) {
-    const h = v.getHours(), m = v.getMinutes();
-    return `${h}h ${m.toString().padStart(2,'0')}m`;
-  }
-  if (typeof v === 'number') {
-    const h = Math.floor(v);
-    const m = Math.round((v - h) * 60);
-    return `${h}h ${m.toString().padStart(2,'0')}m`;
-  }
-  return String(v);
-}
-
-function showToast(msg, error) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.toggle('error', !!error);
-  t.classList.add('show');
-  clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), error ? 5000 : 2500);
-}
-
-// RENDER
-function render() {
-  if (!orders.length) return;
-  const filtered = getFiltered();
-  const today = new Date(); today.setHours(0,0,0,0);
-  const rush       = filtered.filter(o => o.rush).length;
-  const overdue    = filtered.filter(o => o.due && new Date(o.due) < today).length;
-  const totalValue = filtered.reduce((s, o) => s + (o.value || 0), 0);
-  const totalBookedMSF = filtered.reduce((s, o) => s + (o.boardMsf || 0), 0);
-  const durstMSF   = filtered.filter(o => o.status === 'In Queue for Printing' || o.status === 'Printing').reduce((s, o) => s + (o.boardMsf || 0), 0);
-  const elitronMSF = filtered.filter(o => o.status === 'In Queue for Cutting'  || o.status === 'Cutting' ).reduce((s, o) => s + (o.boardMsf || 0), 0);
-
-  document.getElementById('summary-bar').innerHTML = `
-    <div class="stat stat-highlight"><div class="stat-label">Total order value</div><div class="stat-val">${totalValue > 0 ? fmtMoney(totalValue) : '—'}</div></div>
-    <div class="stat stat-highlight-green"><div class="stat-label">Total Booked MSF</div><div class="stat-val">${totalBookedMSF > 0 ? fmtMSF(totalBookedMSF) : '—'}</div></div>
-    <div class="stat stat-highlight-blue"><div class="stat-label">Durst MSF</div><div class="stat-val">${durstMSF > 0 ? fmtMSF(durstMSF) : '—'}</div></div>
-    <div class="stat stat-highlight-rose"><div class="stat-label">Elitron MSF</div><div class="stat-val">${elitronMSF > 0 ? fmtMSF(elitronMSF) : '—'}</div></div>
-    <div class="stat"><div class="stat-label">Orders</div><div class="stat-val">${filtered.length}</div></div>
-    <div class="stat"><div class="stat-label">Rush</div><div class="stat-val">${rush}</div></div>
-    <div class="stat"><div class="stat-label">Overdue</div><div class="stat-val" style="color:${overdue > 0 ? '#c0392b' : 'inherit'}">${overdue}</div></div>
-  `;
-
-  document.getElementById('board').innerHTML = ALL_STAGES.map(stage => {
-    const cards = filtered.filter(o => o.status === stage.key);
-    const stageValue = cards.reduce((s, o) => s + (o.value || 0), 0);
-    return `<div class="col">
-      <div class="col-header" style="background:${stage.color}">
-        <span class="col-title" style="color:${stage.textColor}">${stage.key}</span>
-        <span class="col-count" style="background:${stage.countBg};color:${stage.countColor}">${cards.length}</span>
-      </div>
-      ${stageValue > 0 ? `<div class="col-value">${fmtMoney(stageValue)}</div>` : '<div style="margin-bottom:8px;"></div>'}
-      <div class="cards-list" data-stage="${stage.key}">
-        ${cards.length === 0 ? '<div class="empty-col">Drop cards here</div>' : cards.map(cardHTML).join('')}
-      </div>
-    </div>`;
-  }).join('');
-
-  attachDrag();
-}
-
-function cardHTML(o) {
-  const { cls, label } = dueInfo(o.due);
-  const money = fmtMoney(o.value);
-  const printTime = fmtPrintTime(o.estPrintTime);
-  return `<div class="card" draggable="true" data-id="${o.id}">
-    <div class="card-header">
-      <div>
-        <div class="card-order-label">Order No.</div>
-        <div class="card-order-num">${o.id}</div>
-      </div>
-      ${o.rush ? '<span class="rush-badge" title="Rush">🚩</span>' : ''}
-    </div>
-    <div class="card-body">
-      <div class="card-product">${o.product || '—'}${o.size ? ` <span class="card-size">· ${o.size}</span>` : ''}</div>
-      <div class="card-company">${o.company || '—'}</div>
-      <div class="card-meta">
-        ${o.qty       != null ? `<span class="tag tag-blue">Qty ${o.qty.toLocaleString()}</span>` : ''}
-        ${o.boardMsf  != null ? `<span class="tag tag-green">Board MSF ${o.boardMsf}</span>` : ''}
-        ${printTime          ? `<span class="tag tag-purple">⏱ ${printTime}</span>` : ''}
-        ${o.rep              ? `<span class="tag tag-orange">${o.rep}</span>` : ''}
-        ${o.designer         ? `<span class="tag tag-gray">${o.designer}</span>` : ''}
-      </div>
-    </div>
-    <div class="card-footer">
-      ${money ? `<span class="card-value">${money}</span>` : '<span></span>'}
-      <span class="card-due ${cls}">${label}</span>
-    </div>
-  </div>`;
-}
-
-// DRAG & DROP
-function attachDrag() {
-  document.querySelectorAll('.card').forEach(c => { c.addEventListener('dragstart', onDragStart); c.addEventListener('dragend', onDragEnd); });
-  document.querySelectorAll('.cards-list').forEach(l => { l.addEventListener('dragover', onListOver); l.addEventListener('dragenter', onListEnter); l.addEventListener('dragleave', onListLeave); l.addEventListener('drop', onListDrop); });
-}
-function onDragStart(e) { dragSrcId = this.dataset.id; this.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', dragSrcId); }
-function onDragEnd() { this.classList.remove('dragging'); document.querySelectorAll('.cards-list').forEach(l => l.classList.remove('drag-over')); if (placeholder && placeholder.parentNode) placeholder.parentNode.removeChild(placeholder); placeholder = null; dragSrcId = null; }
-function onListEnter(e) { e.preventDefault(); if (dragSrcId) this.classList.add('drag-over'); }
-function onListLeave(e) { if (!this.contains(e.relatedTarget)) this.classList.remove('drag-over'); }
-function onListOver(e) {
-  e.preventDefault(); if (!dragSrcId) return; e.dataTransfer.dropEffect = 'move';
-  if (!placeholder) { placeholder = document.createElement('div'); placeholder.className = 'drag-placeholder'; }
-  const afterEl = getAfterEl(this, e.clientY);
-  const empty = this.querySelector('.empty-col'); if (empty) empty.style.display = 'none';
-  afterEl ? this.insertBefore(placeholder, afterEl) : this.appendChild(placeholder);
-}
-function getAfterEl(list, y) {
-  return [...list.querySelectorAll('.card:not(.dragging)')].reduce((acc, el) => {
-    const { top, height } = el.getBoundingClientRect(), offset = y - top - height / 2;
-    return offset < 0 && offset > acc.offset ? { offset, el } : acc;
-  }, { offset: -Infinity }).el;
-}
-function onListDrop(e) {
-  e.preventDefault(); this.classList.remove('drag-over'); if (!dragSrcId) return;
-  const order = orders.find(o => o.id === dragSrcId);
-  if (order && order.status !== this.dataset.stage) { order.status = this.dataset.stage; showToast(`#${order.id} moved to "${this.dataset.stage}" (visual only — not saved to Excel)`); }
-  render();
-}
-
-// INIT
-if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initAuth); }
-else { initAuth(); }
+// ── Init ────────────────────────────────────────────────────────────────────
+bindToggle('compact', 'cb-h-compact', on => document.body.classList.toggle('compact', on));
+bindToggle('hide-empty', 'cb-h-hide-empty', on => { hideEmpty = on; render(); });
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initAuth); else initAuth();
 </script>
 </body>
 </html>
